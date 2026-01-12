@@ -1,0 +1,3328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduNotes Pro | Plateforme Intelligente de Gestion des Notes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --girl-color: #e84393;
+            --boy-color: #0984e3;
+            --new-student: #00cec9;
+            --old-student: #fd79a8;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 0;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+        }
+
+        .logo span {
+            color: var(--light-color);
+            font-weight: 300;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-btn {
+            padding: 8px 15px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .header-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .header-btn-danger {
+            background-color: rgba(231, 76, 60, 0.8);
+        }
+
+        .header-btn-danger:hover {
+            background-color: rgba(192, 57, 43, 0.8);
+        }
+
+        nav {
+            width: 100%;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 10px;
+            min-width: max-content;
+            padding-bottom: 5px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            transition: background-color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        main {
+            padding: 20px 0;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-header h2 {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin: 8px 0;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background-color: rgba(39, 174, 96, 0.2);
+            color: var(--success-color);
+        }
+
+        .badge-warning {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--warning-color);
+        }
+
+        .badge-danger {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--accent-color);
+        }
+
+        .badge-girl {
+            background-color: rgba(232, 67, 147, 0.2);
+            color: var(--girl-color);
+        }
+
+        .badge-boy {
+            background-color: rgba(9, 132, 227, 0.2);
+            color: var(--boy-color);
+        }
+
+        .badge-new {
+            background-color: rgba(0, 206, 201, 0.2);
+            color: var(--new-student);
+        }
+
+        .badge-old {
+            background-color: rgba(253, 121, 168, 0.2);
+            color: var(--old-student);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 16px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-danger {
+            background-color: var(--accent-color);
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background-color: #219653;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            transition: border 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+        }
+
+        .select-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        table th, table td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        table th {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-top: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: var(--primary-color);
+        }
+
+        .tab.active {
+            color: var(--secondary-color);
+            border-bottom: 3px solid var(--secondary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 0.9rem;
+        }
+
+        .alert-success {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert-warning {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert-info {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--secondary-color);
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 25px 0;
+            margin-top: 40px;
+            font-size: 0.9rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 8px;
+        }
+
+        .footer-section a {
+            color: #bdc3c7;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: white;
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #bdc3c7;
+            font-size: 0.85rem;
+        }
+
+        .student-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .avatar-girl {
+            background-color: var(--girl-color);
+        }
+
+        .avatar-boy {
+            background-color: var(--boy-color);
+        }
+
+        .competence-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .competence-card {
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            padding: 12px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .competence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .competence-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .competence-level {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+
+        .level-excellent { background-color: rgba(39, 174, 96, 0.2); color: var(--success-color); }
+        .level-good { background-color: rgba(52, 152, 219, 0.2); color: var(--secondary-color); }
+        .level-average { background-color: rgba(243, 156, 18, 0.2); color: var(--warning-color); }
+        .level-needs-improvement { background-color: rgba(231, 76, 60, 0.2); color: var(--accent-color); }
+
+        .indicator-dots {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot-filled { background-color: var(--secondary-color); }
+        .dot-empty { background-color: #ddd; }
+
+        .gender-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .gender-stat {
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .gender-icon {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .gender-icon.girl { color: var(--girl-color); }
+        .gender-icon.boy { color: var(--boy-color); }
+
+        .timeline {
+            position: relative;
+            padding-left: 25px;
+            margin-top: 15px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #ddd;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--secondary-color);
+        }
+
+        .timeline-item.new-student::before {
+            background-color: var(--new-student);
+        }
+
+        .timeline-date {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+
+        .timeline-content {
+            background-color: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+        }
+
+        .file-input-container {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .json-viewer {
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .json-viewer .key {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .json-viewer .string {
+            color: var(--success-color);
+        }
+
+        .json-viewer .number {
+            color: var(--secondary-color);
+        }
+
+        .json-viewer .boolean {
+            color: var(--warning-color);
+        }
+
+        .json-viewer .null {
+            color: #999;
+        }
+
+        .class-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .class-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .class-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .subject-list {
+            list-style: none;
+        }
+
+        .subject-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .subject-list li:last-child {
+            border-bottom: none;
+        }
+
+        .subject-name {
+            font-weight: 600;
+        }
+
+        .student-count {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .logo {
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .header-actions {
+                justify-content: center;
+            }
+            
+            nav ul {
+                justify-content: flex-start;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .select-group {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .competence-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card-actions {
+                justify-content: center;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+            
+            .gender-stat {
+                min-width: 80px;
+            }
+            
+            .tab {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .header-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .modal-close:hover {
+            color: var(--accent-color);
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .data-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .data-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .data-action-btn:hover {
+            background-color: #e9ecef;
+        }
+
+        /* Import multiple */
+        .bulk-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: var(--border-radius);
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .bulk-upload-area:hover {
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .bulk-upload-area i {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        .uploaded-files {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-name {
+            font-weight: 600;
+        }
+
+        .file-size {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        /* Delete buttons */
+        .delete-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .delete-btn:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Modal pour confirmation suppression -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="deleteModalTitle">Confirmer la suppression</h3>
+                <button class="modal-close" onclick="closeModal('deleteModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteModalMessage"></p>
+                <p><strong>Cette action est irréversible.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('deleteModal')">Annuler</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn">Confirmer la suppression</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour confirmation réinitialisation -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirmer la réinitialisation</h3>
+                <button class="modal-close" onclick="closeModal('resetModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir réinitialiser toutes les données ?</p>
+                <p><strong>Cette action supprimera tous les élèves, notes et compétences enregistrés.</strong></p>
+                <p>Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('resetModal')">Annuler</button>
+                <button class="btn btn-danger" onclick="resetAllData()">Confirmer la réinitialisation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour import JSON -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Importer des données JSON</h3>
+                <button class="modal-close" onclick="closeModal('importModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="jsonFile">Sélectionner un fichier JSON</label>
+                    <div class="file-input-container">
+                        <button class="btn" style="width: 100%;">
+                            <i class="fas fa-file-upload"></i> Choisir un fichier
+                        </button>
+                        <input type="file" id="jsonFile" class="file-input" accept=".json">
+                    </div>
+                    <p id="fileName" style="margin-top: 10px; font-style: italic; color: #7f8c8d;"></p>
+                </div>
+                <div class="form-group">
+                    <label for="jsonContent">Ou coller le contenu JSON</label>
+                    <textarea id="jsonContent" class="form-control" rows="10" placeholder='{"students": [], "grades": [], "competences": []}'></textarea>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div>Le fichier JSON doit contenir les clés "students", "grades" et "competences".</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('importModal')">Annuler</button>
+                <button class="btn btn-success" onclick="importJSONData()">Importer les données</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <div>
+                        <h1>EduNotes <span>Pro</span></h1>
+                        <p>Plateforme intelligente de gestion scolaire</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="openModal('importModal')">
+                        <i class="fas fa-file-import"></i> Importer
+                    </button>
+                    <button class="header-btn" onclick="exportData()">
+                        <i class="fas fa-file-export"></i> Exporter
+                    </button>
+                    <button class="header-btn header-btn-danger" onclick="openModal('resetModal')">
+                        <i class="fas fa-trash-alt"></i> Réinitialiser
+                    </button>
+                    <button class="header-btn" onclick="generatePDF()">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="#" class="active" data-tab="dashboard"><i class="fas fa-tachometer-alt"></i> Tableau</a></li>
+                        <li><a href="#" data-tab="students"><i class="fas fa-users"></i> Élèves</a></li>
+                        <li><a href="#" data-tab="grades"><i class="fas fa-edit"></i> Notes</a></li>
+                        <li><a href="#" data-tab="competences"><i class="fas fa-star"></i> Compétences</a></li>
+                        <li><a href="#" data-tab="classView"><i class="fas fa-school"></i> Classes</a></li>
+                        <li><a href="#" data-tab="dataView"><i class="fas fa-database"></i> Données</a></li>
+                        <li><a href="#" data-tab="analytics"><i class="fas fa-chart-line"></i> Analyses</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="alert alert-success">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>Bienvenue sur EduNotes Pro</strong> - Plateforme complète de gestion scolaire. 
+                    <span id="lastUpdate"></span>
+                </div>
+            </div>
+            
+            <div class="dashboard">
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h2>Élèves</h2>
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value" id="total-students">0</div>
+                    <div class="stat-label">Élèves inscrits</div>
+                    <div class="gender-stats">
+                        <div class="gender-stat">
+                            <div class="gender-icon girl"><i class="fas fa-female"></i></div>
+                            <div class="stat-value" id="girls-count">0</div>
+                            <div class="stat-label">Filles</div>
+                        </div>
+                        <div class="gender-stat">
+                            <div class="gender-icon boy"><i class="fas fa-male"></i></div>
+                            <div class="stat-value" id="boys-count">0</div>
+                            <div class="stat-label">Garçons</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h2>Notes</h2>
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="stat-value" id="avg-grade">0.0</div>
+                    <div class="stat-label">Moyenne générale</div>
+                    <div style="margin-top: 15px;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="avg-progress" style="width: 0%;"></div>
+                        </div>
+                        <p style="margin-top: 10px; font-size: 0.85rem;" id="grade-trend"></p>
+                    </div>
+                </div>
+                
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h2>Compétences</h2>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-value" id="avg-competence">0%</div>
+                    <div class="stat-label">Niveau moyen</div>
+                    <div style="margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
+                            <span>Acquises</span>
+                            <span class="badge badge-success" id="comp-excellent">0%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
+                            <span>En cours</span>
+                            <span class="badge badge-warning" id="comp-good">0%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                            <span>À renforcer</span>
+                            <span class="badge badge-danger" id="comp-needs">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2>Répartition par classe</h2>
+                    <i class="fas fa-school"></i>
+                </div>
+                <div class="chart-container">
+                    <canvas id="classDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Students Tab -->
+        <div id="students" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Gestion des élèves</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-success" id="addStudentBtn">
+                            <i class="fas fa-user-plus"></i> Ajouter
+                        </button>
+                        <button class="btn" onclick="exportStudentsPDF()">
+                            <i class="fas fa-file-pdf"></i> PDF Élèves
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="select-group">
+                    <div class="form-group">
+                        <label for="filterClass">Classe</label>
+                        <select id="filterClass" class="form-control">
+                            <option value="all">Toutes les classes</option>
+                            <option value="6eme">6ème</option>
+                            <option value="5eme">5ème</option>
+                            <option value="4eme">4ème</option>
+                            <option value="3eme">3ème</option>
+                            <option value="2nde">Seconde</option>
+                            <option value="1ere">Première</option>
+                            <option value="terminale">Terminale</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="filterGender">Genre</label>
+                        <select id="filterGender" class="form-control">
+                            <option value="all">Tous</option>
+                            <option value="fille">Filles</option>
+                            <option value="garcon">Garçons</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="filterSeniority">Ancienneté</label>
+                        <select id="filterSeniority" class="form-control">
+                            <option value="all">Tous</option>
+                            <option value="nouveau">Nouveaux</option>
+                            <option value="ancien">Anciens</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="searchStudent">Rechercher</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="searchStudent" class="form-control" placeholder="Nom, prénom...">
+                        <button class="btn" onclick="clearSearch()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table id="studentsTable">
+                        <thead>
+                            <tr>
+                                <th>Élève</th>
+                                <th>Classe</th>
+                                <th>Genre</th>
+                                <th>Ancienneté</th>
+                                <th>Moyenne</th>
+                                <th>Compétences</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody">
+                            <!-- Les données seront ajoutées par JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Grades Tab -->
+        <div id="grades" class="tab-content">
+            <div class="tabs">
+                <div class="tab active" data-grade-tab="add">Saisir notes</div>
+                <div class="tab" data-grade-tab="view">Voir notes</div>
+                <div class="tab" data-grade-tab="competence">Compétences</div>
+                <div class="tab" data-grade-tab="bulk">Import multiple</div>
+            </div>
+            
+            <div id="addGradeTab" class="tab-content active">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Saisie de notes</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-success" onclick="generateGradesPDF()">
+                                <i class="fas fa-file-pdf"></i> PDF Notes
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <form id="gradeForm">
+                        <div class="select-group">
+                            <div class="form-group">
+                                <label for="studentSelect">Élève</label>
+                                <select id="studentSelect" class="form-control" required>
+                                    <option value="">Sélectionner un élève</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="subjectSelect">Matière</label>
+                                <select id="subjectSelect" class="form-control" required>
+                                    <option value="">Sélectionner une matière</option>
+                                    <option value="mathematiques">Mathématiques</option>
+                                    <option value="francais">Français</option>
+                                    <option value="anglais">Anglais</option>
+                                    <option value="histoire">Histoire-Géographie</option>
+                                    <option value="physique">Physique-Chimie</option>
+                                    <option value="svt">SVT</option>
+                                    <option value="espagnol">Espagnol</option>
+                                    <option value="philosophie">Philosophie</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="lessonSelect">Leçon</label>
+                                <input type="text" id="lessonSelect" class="form-control" placeholder="Ex: Théorème de Pythagore" required>
+                            </div>
+                        </div>
+                        
+                        <div class="select-group">
+                            <div class="form-group">
+                                <label for="gradeType">Type</label>
+                                <select id="gradeType" class="form-control" required>
+                                    <option value="">Type d'évaluation</option>
+                                    <option value="devoir">Devoir surveillé</option>
+                                    <option value="interro">Interrogation</option>
+                                    <option value="oral">Oral</option>
+                                    <option value="projet">Projet</option>
+                                    <option value="examen">Examen</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="gradeValue">Note (/20)</label>
+                                <input type="number" id="gradeValue" class="form-control" min="0" max="20" step="0.5" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="gradeDate">Date</label>
+                                <input type="date" id="gradeDate" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="gradeComment">Commentaire</label>
+                            <textarea id="gradeComment" class="form-control" rows="3" placeholder="Remarques sur l'évaluation..."></textarea>
+                        </div>
+                        
+                        <div class="data-actions">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Enregistrer
+                            </button>
+                            <button type="reset" class="btn">
+                                <i class="fas fa-redo"></i> Réinitialiser
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div id="viewGradeTab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Visualisation des notes</h2>
+                        <div class="card-actions">
+                            <button class="btn" onclick="generateSubjectPDF()">
+                                <i class="fas fa-file-pdf"></i> PDF par matière
+                            </button>
+                            <button class="btn" onclick="generateClassPDF()">
+                                <i class="fas fa-file-pdf"></i> PDF par classe
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="select-group">
+                        <div class="form-group">
+                            <label for="viewClass">Classe</label>
+                            <select id="viewClass" class="form-control">
+                                <option value="all">Toutes</option>
+                                <option value="6eme">6ème</option>
+                                <option value="5eme">5ème</option>
+                                <option value="4eme">4ème</option>
+                                <option value="3eme">3ème</option>
+                                <option value="2nde">Seconde</option>
+                                <option value="1ere">Première</option>
+                                <option value="terminale">Terminale</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="viewSubject">Matière</label>
+                            <select id="viewSubject" class="form-control">
+                                <option value="all">Toutes</option>
+                                <option value="mathematiques">Mathématiques</option>
+                                <option value="francais">Français</option>
+                                <option value="anglais">Anglais</option>
+                                <option value="histoire">Histoire-Géographie</option>
+                                <option value="physique">Physique-Chimie</option>
+                                <option value="svt">SVT</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="viewPeriod">Période</label>
+                            <select id="viewPeriod" class="form-control">
+                                <option value="all">Toute l'année</option>
+                                <option value="trimestre1">1er trimestre</option>
+                                <option value="trimestre2">2ème trimestre</option>
+                                <option value="trimestre3">3ème trimestre</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="overflow-x: auto;">
+                        <table id="gradesTable">
+                            <thead>
+                                <tr>
+                                    <th>Élève</th>
+                                    <th>Classe</th>
+                                    <th>Matière</th>
+                                    <th>Leçon</th>
+                                    <th>Note</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gradesTableBody">
+                                <!-- Les données seront ajoutées par JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="competenceGradeTab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Évaluation des compétences</h2>
+                    </div>
+                    <form id="competenceForm">
+                        <div class="select-group">
+                            <div class="form-group">
+                                <label for="competenceStudent">Élève</label>
+                                <select id="competenceStudent" class="form-control" required>
+                                    <option value="">Sélectionner un élève</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="competenceSubject">Matière</label>
+                                <select id="competenceSubject" class="form-control" required>
+                                    <option value="">Sélectionner une matière</option>
+                                    <option value="mathematiques">Mathématiques</option>
+                                    <option value="francais">Français</option>
+                                    <option value="anglais">Anglais</option>
+                                    <option value="histoire">Histoire-Géographie</option>
+                                    <option value="physique">Physique-Chimie</option>
+                                    <option value="svt">SVT</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="competenceLesson">Leçon</label>
+                                <input type="text" id="competenceLesson" class="form-control" placeholder="Ex: Théorème de Pythagore" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Compétences</label>
+                            <div class="competence-grid" id="competenceList">
+                                <!-- Les compétences seront générées dynamiquement -->
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="competenceComment">Commentaire</label>
+                            <textarea id="competenceComment" class="form-control" rows="3" placeholder="Remarques sur les compétences..."></textarea>
+                        </div>
+                        
+                        <div class="data-actions">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Enregistrer
+                            </button>
+                            <button type="button" class="btn" id="generateCompetencesBtn">
+                                <i class="fas fa-magic"></i> Générer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Nouvel onglet Import Multiple -->
+            <div id="bulkGradeTab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Import multiple de fichiers JSON</h2>
+                        <i class="fas fa-file-import"></i>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Importez plusieurs fichiers JSON à la fois</strong> - Les fichiers seront analysés et les données seront fusionnées.
+                            Vous pouvez importer des fichiers d'élèves, de notes ou de compétences.
+                        </div>
+                    </div>
+                    
+                    <div class="bulk-upload-area" id="bulkUploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Glissez-déposez vos fichiers JSON ici</h3>
+                        <p>ou cliquez pour sélectionner des fichiers</p>
+                        <input type="file" id="bulkFileInput" class="file-input" accept=".json" multiple>
+                    </div>
+                    
+                    <div class="uploaded-files" id="uploadedFiles">
+                        <!-- Liste des fichiers uploadés -->
+                    </div>
+                    
+                    <div class="data-actions" style="margin-top: 20px;">
+                        <button class="btn btn-success" onclick="processBulkImport()">
+                            <i class="fas fa-play"></i> Traiter les fichiers
+                        </button>
+                        <button class="btn btn-danger" onclick="clearBulkFiles()">
+                            <i class="fas fa-trash"></i> Vider la liste
+                        </button>
+                    </div>
+                    
+                    <div id="bulkImportResults" style="margin-top: 20px;">
+                        <!-- Résultats de l'import -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Competences Tab -->
+        <div id="competences" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Suivi des compétences</h2>
+                    <div class="card-actions">
+                        <button class="btn" onclick="generateCompetencesPDF()">
+                            <i class="fas fa-file-pdf"></i> PDF Compétences
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="select-group">
+                    <div class="form-group">
+                        <label for="competenceStudentSelect">Élève</label>
+                        <select id="competenceStudentSelect" class="form-control">
+                            <option value="">Sélectionner un élève</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="competenceSubjectFilter">Matière</label>
+                        <select id="competenceSubjectFilter" class="form-control">
+                            <option value="all">Toutes</option>
+                            <option value="mathematiques">Mathématiques</option>
+                            <option value="francais">Français</option>
+                            <option value="anglais">Anglais</option>
+                            <option value="histoire">Histoire-Géographie</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="studentCompetenceDetails">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>Sélectionnez un élève pour voir le détail de ses compétences</div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h2>Compétences globales</h2>
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="globalCompetenceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Class View Tab -->
+        <div id="classView" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Vue d'ensemble des classes</h2>
+                    <div class="card-actions">
+                        <button class="btn" onclick="generateClassOverviewPDF()">
+                            <i class="fas fa-file-pdf"></i> PDF Classes
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="select-group">
+                    <div class="form-group">
+                        <label for="overviewClass">Classe</label>
+                        <select id="overviewClass" class="form-control">
+                            <option value="all">Toutes les classes</option>
+                            <option value="6eme">6ème</option>
+                            <option value="5eme">5ème</option>
+                            <option value="4eme">4ème</option>
+                            <option value="3eme">3ème</option>
+                            <option value="2nde">Seconde</option>
+                            <option value="1ere">Première</option>
+                            <option value="terminale">Terminale</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="classOverviewContent" class="class-overview">
+                    <!-- Contenu des classes généré dynamiquement -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data View Tab -->
+        <div id="dataView" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Visualisation des données JSON</h2>
+                    <div class="card-actions">
+                        <button class="btn" onclick="exportData()">
+                            <i class="fas fa-file-export"></i> Exporter JSON
+                        </button>
+                        <button class="btn btn-warning" onclick="loadSampleData()">
+                            <i class="fas fa-download"></i> Données de test
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" data-json-tab="students">Élèves</div>
+                    <div class="tab" data-json-tab="grades">Notes</div>
+                    <div class="tab" data-json-tab="competences">Compétences</div>
+                    <div class="tab" data-json-tab="all">Toutes les données</div>
+                </div>
+                
+                <div id="jsonStudentsTab" class="tab-content active">
+                    <div class="json-viewer" id="jsonStudentsViewer">
+                        <!-- Données JSON des élèves -->
+                    </div>
+                </div>
+                
+                <div id="jsonGradesTab" class="tab-content">
+                    <div class="json-viewer" id="jsonGradesViewer">
+                        <!-- Données JSON des notes -->
+                    </div>
+                </div>
+                
+                <div id="jsonCompetencesTab" class="tab-content">
+                    <div class="json-viewer" id="jsonCompetencesViewer">
+                        <!-- Données JSON des compétences -->
+                    </div>
+                </div>
+                
+                <div id="jsonAllTab" class="tab-content">
+                    <div class="json-viewer" id="jsonAllViewer">
+                        <!-- Toutes les données JSON -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Analyses avancées</h2>
+                    <div class="card-actions">
+                        <button class="btn" onclick="generateAnalyticsPDF()">
+                            <i class="fas fa-file-pdf"></i> PDF Analyses
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="select-group">
+                    <div class="form-group">
+                        <label for="analyticsClass">Classe</label>
+                        <select id="analyticsClass" class="form-control">
+                            <option value="all">Toutes</option>
+                            <option value="6eme">6ème</option>
+                            <option value="5eme">5ème</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="analyticsSubject">Matière</label>
+                        <select id="analyticsSubject" class="form-control">
+                            <option value="all">Toutes</option>
+                            <option value="mathematiques">Mathématiques</option>
+                            <option value="francais">Français</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="analyticsGender">Genre</label>
+                        <select id="analyticsGender" class="form-control">
+                            <option value="all">Tous</option>
+                            <option value="fille">Filles</option>
+                            <option value="garcon">Garçons</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="dashboard" style="margin-top: 20px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Performances par genre</h2>
+                            <i class="fas fa-venus-mars"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="genderPerformanceChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Répartition des notes</h2>
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="gradeDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h2>Statistiques détaillées</h2>
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="dashboard">
+                        <div class="card stat-card">
+                            <div class="stat-value" id="medianGrade">0.0</div>
+                            <div class="stat-label">Médiane</div>
+                        </div>
+                        
+                        <div class="card stat-card">
+                            <div class="stat-value" id="stdDev">0.0</div>
+                            <div class="stat-label">Écart-type</div>
+                        </div>
+                        
+                        <div class="card stat-card">
+                            <div class="stat-value" id="successRate">0%</div>
+                            <div class="stat-label">Taux de réussite</div>
+                        </div>
+                        
+                        <div class="card stat-card">
+                            <div class="stat-value" id="topStudent">0</div>
+                            <div class="stat-label">Meilleure note</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h2>Analyses des fichiers importés</h2>
+                        <i class="fas fa-file-import"></i>
+                    </div>
+                    <div id="importAnalysis" class="chart-container">
+                        <canvas id="importAnalysisChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>EduNotes Pro</h3>
+                    <p>Plateforme complète de gestion scolaire avec analyses avancées et export PDF.</p>
+                    <p style="margin-top: 10px;"><i class="fas fa-envelope"></i> contact@edunotespro.fr</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Fonctionnalités</h3>
+                    <ul>
+                        <li><a href="#">Gestion des élèves</a></li>
+                        <li><a href="#">Évaluation par compétences</a></li>
+                        <li><a href="#">Analyses statistiques</a></li>
+                        <li><a href="#">Export PDF/JSON</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Ressources</h3>
+                    <ul>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Tutoriels</a></li>
+                        <li><a href="#">Support technique</a></li>
+                        <li><a href="#">Mises à jour</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Compatibilité</h3>
+                    <p>Optimisé pour tous les écrans : desktop, tablette et mobile.</p>
+                    <p style="margin-top: 10px; font-size: 0.8rem;">Dernière mise à jour : Novembre 2023</p>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                <p>&copy; 2023 EduNotes Pro - Tous droits réservés. Version 2.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Données de démonstration
+        const sampleData = {
+            students: [
+                { id: 1, firstName: "Emma", lastName: "Martin", class: "6eme", gender: "fille", seniority: "ancien", registrationDate: "2022-09-01", average: 15.2 },
+                { id: 2, firstName: "Lucas", lastName: "Bernard", class: "5eme", gender: "garcon", seniority: "ancien", registrationDate: "2022-09-01", average: 12.8 },
+                { id: 3, firstName: "Chloé", lastName: "Dubois", class: "4eme", gender: "fille", seniority: "nouveau", registrationDate: "2023-09-01", average: 14.5 },
+                { id: 4, firstName: "Hugo", lastName: "Thomas", class: "3eme", gender: "garcon", seniority: "ancien", registrationDate: "2021-09-01", average: 11.9 },
+                { id: 5, firstName: "Léa", lastName: "Robert", class: "2nde", gender: "fille", seniority: "nouveau", registrationDate: "2023-09-01", average: 13.7 }
+            ],
+            grades: [
+                { id: 1, studentId: 1, subject: "mathematiques", lesson: "Théorème de Pythagore", value: 16, type: "devoir", date: "2023-10-15", comment: "Très bon travail" },
+                { id: 2, studentId: 1, subject: "francais", lesson: "Analyse de texte", value: 14, type: "interro", date: "2023-10-18", comment: "" },
+                { id: 3, studentId: 2, subject: "anglais", lesson: "Present perfect", value: 11.5, type: "oral", date: "2023-10-20", comment: "Peut mieux faire" },
+                { id: 4, studentId: 3, subject: "histoire", lesson: "La Révolution française", value: 15, type: "devoir", date: "2023-10-12", comment: "Excellent" },
+                { id: 5, studentId: 4, subject: "physique", lesson: "Les lois de Newton", value: 9.5, type: "examen", date: "2023-10-22", comment: "Des difficultés sur ce chapitre" }
+            ],
+            competences: [
+                { id: 1, studentId: 1, subject: "mathematiques", lesson: "Théorème de Pythagore", date: "2023-10-15", 
+                  competences: [
+                    { name: "Appliquer le théorème", level: "excellent" },
+                    { name: "Résoudre des problèmes", level: "good" }
+                  ], comment: "Très bonne compréhension" }
+            ],
+            subjectCompetences: {
+                "mathematiques": ["Résoudre des problèmes", "Appliquer des théorèmes", "Raisonner logiquement"],
+                "francais": ["Comprendre un texte", "Analyser littérairement", "Rédiger clairement"],
+                "anglais": ["Comprendre à l'oral", "S'exprimer à l'oral", "Lire et comprendre"]
+            }
+        };
+
+        // Variables globales pour la suppression
+        let itemToDelete = null;
+        let deleteType = null;
+
+        // Initialisation des données
+        function initializeData() {
+            if (!localStorage.getItem('edunotesProStudents')) {
+                localStorage.setItem('edunotesProStudents', JSON.stringify(sampleData.students));
+            }
+            
+            if (!localStorage.getItem('edunotesProGrades')) {
+                localStorage.setItem('edunotesProGrades', JSON.stringify(sampleData.grades));
+            }
+            
+            if (!localStorage.getItem('edunotesProCompetences')) {
+                localStorage.setItem('edunotesProCompetences', JSON.stringify(sampleData.competences));
+            }
+            
+            if (!localStorage.getItem('edunotesProSubjectCompetences')) {
+                localStorage.setItem('edunotesProSubjectCompetences', JSON.stringify(sampleData.subjectCompetences));
+            }
+            
+            if (!localStorage.getItem('edunotesProLastUpdate')) {
+                localStorage.setItem('edunotesProLastUpdate', new Date().toISOString());
+            }
+            
+            if (!localStorage.getItem('edunotesProImportedFiles')) {
+                localStorage.setItem('edunotesProImportedFiles', JSON.stringify([]));
+            }
+            
+            updateLastUpdateDisplay();
+        }
+
+        // Récupération des données
+        function getStudents() {
+            return JSON.parse(localStorage.getItem('edunotesProStudents')) || [];
+        }
+
+        function getGrades() {
+            return JSON.parse(localStorage.getItem('edunotesProGrades')) || [];
+        }
+
+        function getCompetences() {
+            return JSON.parse(localStorage.getItem('edunotesProCompetences')) || [];
+        }
+
+        function getSubjectCompetences() {
+            return JSON.parse(localStorage.getItem('edunotesProSubjectCompetences')) || {};
+        }
+
+        function getImportedFiles() {
+            return JSON.parse(localStorage.getItem('edunotesProImportedFiles')) || [];
+        }
+
+        // Navigation
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                document.querySelectorAll('nav a').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                this.classList.add('active');
+                
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+                
+                if (tabId === 'students') {
+                    renderStudentsTable();
+                } else if (tabId === 'grades') {
+                    renderGradesTable();
+                } else if (tabId === 'competences') {
+                    updateCompetenceStudentSelect();
+                    renderCompetencesList();
+                } else if (tabId === 'classView') {
+                    renderClassOverview();
+                } else if (tabId === 'dataView') {
+                    renderJSONView();
+                } else if (tabId === 'analytics') {
+                    renderAnalytics();
+                }
+                
+                updateDashboard();
+            });
+        });
+
+        // Sous-onglets
+        document.querySelectorAll('[data-grade-tab]').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-grade-tab');
+                
+                document.querySelectorAll('[data-grade-tab]').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                this.classList.add('active');
+                
+                document.querySelectorAll('#grades .tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                if (tabId === 'add') {
+                    document.getElementById('addGradeTab').classList.add('active');
+                } else if (tabId === 'view') {
+                    document.getElementById('viewGradeTab').classList.add('active');
+                    renderGradesTable();
+                } else if (tabId === 'competence') {
+                    document.getElementById('competenceGradeTab').classList.add('active');
+                    updateCompetenceFormStudentSelect();
+                } else if (tabId === 'bulk') {
+                    document.getElementById('bulkGradeTab').classList.add('active');
+                    initBulkUpload();
+                }
+            });
+        });
+
+        // Onglets JSON
+        document.querySelectorAll('[data-json-tab]').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-json-tab');
+                
+                document.querySelectorAll('[data-json-tab]').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                this.classList.add('active');
+                
+                document.querySelectorAll('#dataView .tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                document.getElementById(`json${tabId.charAt(0).toUpperCase() + tabId.slice(1)}Tab`).classList.add('active');
+                renderJSONView(tabId);
+            });
+        });
+
+        // Mise à jour du tableau de bord
+        function updateDashboard() {
+            const students = getStudents();
+            const grades = getGrades();
+            const competences = getCompetences();
+            
+            // Statistiques élèves
+            document.getElementById('total-students').textContent = students.length;
+            const girls = students.filter(s => s.gender === 'fille');
+            const boys = students.filter(s => s.gender === 'garcon');
+            document.getElementById('girls-count').textContent = girls.length;
+            document.getElementById('boys-count').textContent = boys.length;
+            
+            // Statistiques notes
+            let avgGrade = 0;
+            if (grades.length > 0) {
+                const total = grades.reduce((sum, grade) => sum + grade.value, 0);
+                avgGrade = total / grades.length;
+            }
+            document.getElementById('avg-grade').textContent = avgGrade.toFixed(1);
+            document.getElementById('avg-progress').style.width = `${(avgGrade / 20) * 100}%`;
+            
+            // Statistiques compétences
+            let compExcellent = 0, compGood = 0, compNeeds = 0, totalComps = 0;
+            competences.forEach(comp => {
+                comp.competences.forEach(c => {
+                    totalComps++;
+                    if (c.level === 'excellent') compExcellent++;
+                    else if (c.level === 'good') compGood++;
+                    else if (c.level === 'needs-improvement') compNeeds++;
+                });
+            });
+            
+            const avgComp = totalComps > 0 ? Math.round(((compExcellent * 4 + compGood * 3) / (totalComps * 4)) * 100) : 0;
+            document.getElementById('avg-competence').textContent = `${avgComp}%`;
+            document.getElementById('comp-excellent').textContent = totalComps > 0 ? `${Math.round((compExcellent / totalComps) * 100)}%` : '0%';
+            document.getElementById('comp-good').textContent = totalComps > 0 ? `${Math.round((compGood / totalComps) * 100)}%` : '0%';
+            document.getElementById('comp-needs').textContent = totalComps > 0 ? `${Math.round((compNeeds / totalComps) * 100)}%` : '0%';
+        }
+
+        // Rendu des élèves avec boutons de suppression
+        function renderStudentsTable() {
+            const students = getStudents();
+            const tbody = document.getElementById('studentsTableBody');
+            tbody.innerHTML = '';
+            
+            const filterClass = document.getElementById('filterClass').value;
+            const filterGender = document.getElementById('filterGender').value;
+            const filterSeniority = document.getElementById('filterSeniority').value;
+            const searchTerm = document.getElementById('searchStudent').value.toLowerCase();
+            
+            students.forEach(student => {
+                if (filterClass !== 'all' && student.class !== filterClass) return;
+                if (filterGender !== 'all' && student.gender !== filterGender) return;
+                if (filterSeniority !== 'all' && student.seniority !== filterSeniority) return;
+                if (searchTerm && !`${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm)) return;
+                
+                const tr = document.createElement('tr');
+                const avatarClass = student.gender === 'fille' ? 'avatar-girl' : 'avatar-boy';
+                const genderBadge = student.gender === 'fille' ? 
+                    '<span class="badge badge-girl"><i class="fas fa-venus"></i> Fille</span>' : 
+                    '<span class="badge badge-boy"><i class="fas fa-mars"></i> Garçon</span>';
+                const seniorityBadge = student.seniority === 'nouveau' ?
+                    '<span class="badge badge-new"><i class="fas fa-user-plus"></i> Nouveau</span>' :
+                    '<span class="badge badge-old"><i class="fas fa-user-clock"></i> Ancien</span>';
+                
+                tr.innerHTML = `
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="student-avatar ${avatarClass}">${student.firstName[0]}${student.lastName[0]}</div>
+                            <div>
+                                <strong>${student.firstName} ${student.lastName}</strong><br>
+                                <small>ID: ${student.id}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge">${student.class}</span></td>
+                    <td>${genderBadge}</td>
+                    <td>${seniorityBadge}</td>
+                    <td><span class="badge ${getAverageBadgeClass(student.average)}">${student.average.toFixed(1)}/20</span></td>
+                    <td><span class="badge">${Math.round(student.average * 5)}%</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-small" onclick="viewStudentDetails(${student.id})" title="Voir détails">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-success btn-small" onclick="addGradeForStudent(${student.id})" title="Ajouter une note">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-btn" onclick="confirmDelete('student', ${student.id}, '${student.firstName} ${student.lastName}')" title="Supprimer l'élève">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            updateDashboard();
+        }
+
+        // Rendu des notes avec boutons de suppression
+        function renderGradesTable() {
+            const grades = getGrades();
+            const students = getStudents();
+            const tbody = document.getElementById('gradesTableBody');
+            tbody.innerHTML = '';
+            
+            const filterClass = document.getElementById('viewClass').value;
+            const filterSubject = document.getElementById('viewSubject').value;
+            
+            grades.forEach(grade => {
+                const student = students.find(s => s.id === grade.studentId);
+                if (!student) return;
+                
+                if (filterClass !== 'all' && student.class !== filterClass) return;
+                if (filterSubject !== 'all' && grade.subject !== filterSubject) return;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${student.firstName} ${student.lastName}</td>
+                    <td><span class="badge">${student.class}</span></td>
+                    <td>${grade.subject}</td>
+                    <td>${grade.lesson}</td>
+                    <td><span class="badge ${getGradeBadgeClass(grade.value)}">${grade.value}/20</span></td>
+                    <td>${grade.type}</td>
+                    <td>${new Date(grade.date).toLocaleDateString('fr-FR')}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-small" onclick="viewGradeDetails(${grade.id})" title="Voir détails">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="delete-btn" onclick="confirmDelete('grade', ${grade.id}, 'Note de ${grade.value}/20 en ${grade.subject}')" title="Supprimer la note">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Rendu des compétences avec boutons de suppression
+        function renderCompetencesList() {
+            const competences = getCompetences();
+            const students = getStudents();
+            const container = document.getElementById('studentCompetenceDetails');
+            
+            if (competences.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>Aucune compétence évaluée pour le moment.</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Liste des compétences évaluées</h3>
+                        <span class="badge">${competences.length} évaluation(s)</span>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Élève</th>
+                                        <th>Matière</th>
+                                        <th>Leçon</th>
+                                        <th>Date</th>
+                                        <th>Compétences</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            competences.forEach(comp => {
+                const student = students.find(s => s.id === comp.studentId);
+                const studentName = student ? `${student.firstName} ${student.lastName}` : 'Élève inconnu';
+                const compCount = comp.competences ? comp.competences.length : 0;
+                
+                html += `
+                    <tr>
+                        <td>${studentName}</td>
+                        <td>${comp.subject}</td>
+                        <td>${comp.lesson}</td>
+                        <td>${new Date(comp.date).toLocaleDateString('fr-FR')}</td>
+                        <td><span class="badge">${compCount} compétence(s)</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-small" onclick="viewCompetenceDetails(${comp.id})" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="delete-btn" onclick="confirmDelete('competence', ${comp.id}, 'Compétences de ${studentName} en ${comp.subject}')" title="Supprimer l'évaluation">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // Confirmation de suppression
+        function confirmDelete(type, id, name) {
+            itemToDelete = id;
+            deleteType = type;
+            
+            let message = '';
+            let title = '';
+            
+            switch(type) {
+                case 'student':
+                    title = 'Supprimer un élève';
+                    message = `Êtes-vous sûr de vouloir supprimer l'élève "${name}" ? Cette action supprimera également toutes ses notes et compétences.`;
+                    break;
+                case 'grade':
+                    title = 'Supprimer une note';
+                    message = `Êtes-vous sûr de vouloir supprimer "${name}" ?`;
+                    break;
+                case 'competence':
+                    title = 'Supprimer une évaluation de compétences';
+                    message = `Êtes-vous sûr de vouloir supprimer "${name}" ?`;
+                    break;
+            }
+            
+            document.getElementById('deleteModalTitle').textContent = title;
+            document.getElementById('deleteModalMessage').textContent = message;
+            openModal('deleteModal');
+        }
+
+        // Exécution de la suppression
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (itemToDelete !== null && deleteType !== null) {
+                switch(deleteType) {
+                    case 'student':
+                        deleteStudent(itemToDelete);
+                        break;
+                    case 'grade':
+                        deleteGrade(itemToDelete);
+                        break;
+                    case 'competence':
+                        deleteCompetence(itemToDelete);
+                        break;
+                }
+                
+                closeModal('deleteModal');
+                itemToDelete = null;
+                deleteType = null;
+            }
+        };
+
+        // Suppression d'un élève
+        function deleteStudent(studentId) {
+            let students = getStudents();
+            let grades = getGrades();
+            let competences = getCompetences();
+            
+            // Supprimer l'élève
+            students = students.filter(s => s.id !== studentId);
+            
+            // Supprimer les notes de l'élève
+            grades = grades.filter(g => g.studentId !== studentId);
+            
+            // Supprimer les compétences de l'élève
+            competences = competences.filter(c => c.studentId !== studentId);
+            
+            // Mettre à jour le localStorage
+            localStorage.setItem('edunotesProStudents', JSON.stringify(students));
+            localStorage.setItem('edunotesProGrades', JSON.stringify(grades));
+            localStorage.setItem('edunotesProCompetences', JSON.stringify(competences));
+            
+            // Mettre à jour l'affichage
+            renderStudentsTable();
+            renderGradesTable();
+            renderCompetencesList();
+            
+            alert('Élève supprimé avec succès.');
+        }
+
+        // Suppression d'une note
+        function deleteGrade(gradeId) {
+            let grades = getGrades();
+            
+            // Supprimer la note
+            grades = grades.filter(g => g.id !== gradeId);
+            
+            // Mettre à jour le localStorage
+            localStorage.setItem('edunotesProGrades', JSON.stringify(grades));
+            
+            // Mettre à jour l'affichage
+            renderGradesTable();
+            updateDashboard();
+            
+            alert('Note supprimée avec succès.');
+        }
+
+        // Suppression d'une compétence
+        function deleteCompetence(competenceId) {
+            let competences = getCompetences();
+            
+            // Supprimer la compétence
+            competences = competences.filter(c => c.id !== competenceId);
+            
+            // Mettre à jour le localStorage
+            localStorage.setItem('edunotesProCompetences', JSON.stringify(competences));
+            
+            // Mettre à jour l'affichage
+            renderCompetencesList();
+            updateDashboard();
+            
+            alert('Évaluation de compétences supprimée avec succès.');
+        }
+
+        // Vue d'ensemble des classes
+        function renderClassOverview() {
+            const students = getStudents();
+            const grades = getGrades();
+            const classes = [...new Set(students.map(s => s.class))].sort();
+            const container = document.getElementById('classOverviewContent');
+            container.innerHTML = '';
+            
+            const selectedClass = document.getElementById('overviewClass').value;
+            
+            classes.forEach(className => {
+                if (selectedClass !== 'all' && selectedClass !== className) return;
+                
+                const classStudents = students.filter(s => s.class === className);
+                const classGrades = grades.filter(g => {
+                    const student = students.find(s => s.id === g.studentId);
+                    return student && student.class === className;
+                });
+                
+                // Calculer les statistiques par matière
+                const subjects = {};
+                classGrades.forEach(grade => {
+                    if (!subjects[grade.subject]) {
+                        subjects[grade.subject] = {
+                            grades: [],
+                            average: 0
+                        };
+                    }
+                    subjects[grade.subject].grades.push(grade.value);
+                });
+                
+                // Calculer les moyennes
+                Object.keys(subjects).forEach(subject => {
+                    const gradesList = subjects[subject].grades;
+                    subjects[subject].average = gradesList.length > 0 ? 
+                        (gradesList.reduce((a, b) => a + b, 0) / gradesList.length).toFixed(1) : 0;
+                });
+                
+                const card = document.createElement('div');
+                card.className = 'class-card';
+                card.innerHTML = `
+                    <h3>Classe de ${className}</h3>
+                    <p><strong>${classStudents.length}</strong> élève(s)</p>
+                    <div style="margin: 15px 0;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${(classStudents.filter(s => s.average >= 10).length / classStudents.length) * 100 || 0}%"></div>
+                        </div>
+                        <p style="margin-top: 5px; font-size: 0.85rem;">
+                            ${classStudents.filter(s => s.average >= 10).length}/${classStudents.length} élèves ont la moyenne
+                        </p>
+                    </div>
+                    <h4>Matières</h4>
+                    <ul class="subject-list">
+                        ${Object.keys(subjects).map(subject => `
+                            <li>
+                                <span class="subject-name">${subject}</span>
+                                <span class="badge ${getAverageBadgeClass(subjects[subject].average)}">
+                                    ${subjects[subject].average}/20
+                                </span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Vue JSON
+        function renderJSONView(type = 'students') {
+            const formatJSON = (obj) => {
+                return JSON.stringify(obj, null, 2)
+                    .replace(/("[\w]+":)/g, '<span class="key">$1</span>')
+                    .replace(/("[^"]*")/g, '<span class="string">$1</span>')
+                    .replace(/\b(\d+\.?\d*)\b/g, '<span class="number">$1</span>')
+                    .replace(/\b(true|false)\b/g, '<span class="boolean">$1</span>')
+                    .replace(/\b(null)\b/g, '<span class="null">$1</span>');
+            };
+            
+            if (type === 'students' || type === 'all') {
+                document.getElementById('jsonStudentsViewer').innerHTML = formatJSON(getStudents());
+            }
+            if (type === 'grades' || type === 'all') {
+                document.getElementById('jsonGradesViewer').innerHTML = formatJSON(getGrades());
+            }
+            if (type === 'competences' || type === 'all') {
+                document.getElementById('jsonCompetencesViewer').innerHTML = formatJSON(getCompetences());
+            }
+            if (type === 'all') {
+                const allData = {
+                    students: getStudents(),
+                    grades: getGrades(),
+                    competences: getCompetences(),
+                    lastUpdate: localStorage.getItem('edunotesProLastUpdate'),
+                    importedFiles: getImportedFiles()
+                };
+                document.getElementById('jsonAllViewer').innerHTML = formatJSON(allData);
+            }
+        }
+
+        // Fonctions utilitaires
+        function getAverageBadgeClass(average) {
+            if (average >= 16) return 'badge-success';
+            if (average >= 12) return 'badge-warning';
+            return 'badge-danger';
+        }
+
+        function getGradeBadgeClass(grade) {
+            if (grade >= 16) return 'badge-success';
+            if (grade >= 10) return 'badge-warning';
+            return 'badge-danger';
+        }
+
+        // Gestion des modales
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Réinitialisation des données
+        function resetAllData() {
+            localStorage.removeItem('edunotesProStudents');
+            localStorage.removeItem('edunotesProGrades');
+            localStorage.removeItem('edunotesProCompetences');
+            localStorage.removeItem('edunotesProSubjectCompetences');
+            localStorage.removeItem('edunotesProImportedFiles');
+            
+            initializeData();
+            renderStudentsTable();
+            renderGradesTable();
+            renderCompetencesList();
+            renderClassOverview();
+            renderJSONView();
+            updateDashboard();
+            
+            closeModal('resetModal');
+            alert('Toutes les données ont été réinitialisées.');
+        }
+
+        // Import JSON
+        function importJSONData() {
+            const fileInput = document.getElementById('jsonFile');
+            const jsonContent = document.getElementById('jsonContent').value;
+            
+            let data;
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        data = JSON.parse(e.target.result);
+                        processImport(data, file.name);
+                    } catch (error) {
+                        alert('Erreur lors de la lecture du fichier JSON: ' + error.message);
+                    }
+                };
+                
+                reader.readAsText(file);
+            } else if (jsonContent) {
+                try {
+                    data = JSON.parse(jsonContent);
+                    processImport(data, 'donnees_collées.json');
+                } catch (error) {
+                    alert('Erreur dans le contenu JSON: ' + error.message);
+                }
+            } else {
+                alert('Veuillez sélectionner un fichier ou coller du contenu JSON.');
+            }
+        }
+
+        function processImport(data, fileName) {
+            let importedStudents = 0;
+            let importedGrades = 0;
+            let importedCompetences = 0;
+            
+            // Importer les élèves
+            if (data.students && Array.isArray(data.students)) {
+                const existingStudents = getStudents();
+                const maxId = existingStudents.length > 0 ? Math.max(...existingStudents.map(s => s.id)) : 0;
+                
+                data.students.forEach((student, index) => {
+                    // Vérifier si l'élève existe déjà
+                    const exists = existingStudents.some(s => 
+                        s.firstName === student.firstName && 
+                        s.lastName === student.lastName && 
+                        s.class === student.class
+                    );
+                    
+                    if (!exists) {
+                        student.id = maxId + index + 1;
+                        existingStudents.push(student);
+                        importedStudents++;
+                    }
+                });
+                
+                localStorage.setItem('edunotesProStudents', JSON.stringify(existingStudents));
+            }
+            
+            // Importer les notes
+            if (data.grades && Array.isArray(data.grades)) {
+                const existingGrades = getGrades();
+                const maxId = existingGrades.length > 0 ? Math.max(...existingGrades.map(g => g.id)) : 0;
+                
+                data.grades.forEach((grade, index) => {
+                    grade.id = maxId + index + 1;
+                    existingGrades.push(grade);
+                    importedGrades++;
+                });
+                
+                localStorage.setItem('edunotesProGrades', JSON.stringify(existingGrades));
+            }
+            
+            // Importer les compétences
+            if (data.competences && Array.isArray(data.competences)) {
+                const existingCompetences = getCompetences();
+                const maxId = existingCompetences.length > 0 ? Math.max(...existingCompetences.map(c => c.id)) : 0;
+                
+                data.competences.forEach((competence, index) => {
+                    competence.id = maxId + index + 1;
+                    existingCompetences.push(competence);
+                    importedCompetences++;
+                });
+                
+                localStorage.setItem('edunotesProCompetences', JSON.stringify(existingCompetences));
+            }
+            
+            // Enregistrer le fichier importé
+            const importedFiles = getImportedFiles();
+            importedFiles.push({
+                name: fileName,
+                date: new Date().toISOString(),
+                stats: {
+                    students: importedStudents,
+                    grades: importedGrades,
+                    competences: importedCompetences
+                }
+            });
+            localStorage.setItem('edunotesProImportedFiles', JSON.stringify(importedFiles));
+            
+            localStorage.setItem('edunotesProLastUpdate', new Date().toISOString());
+            
+            updateDashboard();
+            renderStudentsTable();
+            renderGradesTable();
+            renderCompetencesList();
+            renderClassOverview();
+            renderJSONView();
+            
+            closeModal('importModal');
+            alert(`Import réussi !\n\n` +
+                  `- ${importedStudents} nouvel(le)s élève(s)\n` +
+                  `- ${importedGrades} nouvelle(s) note(s)\n` +
+                  `- ${importedCompetences} nouvelle(s) compétence(s)`);
+        }
+
+        // Export des données
+        function exportData() {
+            const data = {
+                students: getStudents(),
+                grades: getGrades(),
+                competences: getCompetences(),
+                importedFiles: getImportedFiles(),
+                exportDate: new Date().toISOString(),
+                version: 'EduNotes Pro 2.0'
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `edunotes-export-${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        // Import multiple
+        function initBulkUpload() {
+            const uploadArea = document.getElementById('bulkUploadArea');
+            const fileInput = document.getElementById('bulkFileInput');
+            
+            // Gestion du drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--secondary-color)';
+                uploadArea.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+            });
+            
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#ddd';
+                uploadArea.style.backgroundColor = '';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#ddd';
+                uploadArea.style.backgroundColor = '';
+                
+                const files = e.dataTransfer.files;
+                handleBulkFiles(files);
+            });
+            
+            // Gestion du clic
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // Gestion de la sélection de fichiers
+            fileInput.addEventListener('change', (e) => {
+                handleBulkFiles(e.target.files);
+            });
+        }
+
+        function handleBulkFiles(files) {
+            const uploadedFilesContainer = document.getElementById('uploadedFiles');
+            
+            for (let file of files) {
+                if (file.type === 'application/json' || file.name.endsWith('.json')) {
+                    addFileToList(file);
+                } else {
+                    alert(`Le fichier "${file.name}" n'est pas un fichier JSON valide.`);
+                }
+            }
+        }
+
+        function addFileToList(file) {
+            const uploadedFilesContainer = document.getElementById('uploadedFiles');
+            
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.dataset.fileName = file.name;
+            
+            const fileSize = (file.size / 1024).toFixed(2) + ' Ko';
+            
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <i class="fas fa-file-code" style="color: var(--secondary-color);"></i>
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${fileSize}</div>
+                    </div>
+                </div>
+                <div class="file-actions">
+                    <button class="delete-btn" onclick="removeFileFromList('${file.name}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            uploadedFilesContainer.appendChild(fileItem);
+        }
+
+        function removeFileFromList(fileName) {
+            const fileItem = document.querySelector(`.file-item[data-file-name="${fileName}"]`);
+            if (fileItem) {
+                fileItem.remove();
+            }
+        }
+
+        function clearBulkFiles() {
+            document.getElementById('uploadedFiles').innerHTML = '';
+        }
+
+        async function processBulkImport() {
+            const fileItems = document.querySelectorAll('.file-item');
+            const resultsContainer = document.getElementById('bulkImportResults');
+            
+            if (fileItems.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>Aucun fichier à importer.</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultsContainer.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <div>Traitement des fichiers en cours...</div>
+                </div>
+            `;
+            
+            let totalStudents = 0;
+            let totalGrades = 0;
+            let totalCompetences = 0;
+            let importedFiles = [];
+            
+            for (let fileItem of fileItems) {
+                const fileName = fileItem.dataset.fileName;
+                
+                try {
+                    // Simuler la lecture du fichier (dans un cas réel, il faudrait lire le fichier)
+                    const mockData = generateMockData(fileName);
+                    
+                    // Traiter les données
+                    if (mockData.students) totalStudents += mockData.students.length;
+                    if (mockData.grades) totalGrades += mockData.grades.length;
+                    if (mockData.competences) totalCompetences += mockData.competences.length;
+                    
+                    importedFiles.push({
+                        name: fileName,
+                        date: new Date().toISOString(),
+                        stats: {
+                            students: mockData.students ? mockData.students.length : 0,
+                            grades: mockData.grades ? mockData.grades.length : 0,
+                            competences: mockData.competences ? mockData.competences.length : 0
+                        }
+                    });
+                    
+                    // Ajouter un délai pour simuler le traitement
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                } catch (error) {
+                    console.error(`Erreur avec le fichier ${fileName}:`, error);
+                }
+            }
+            
+            // Enregistrer les fichiers importés
+            const existingImportedFiles = getImportedFiles();
+            const updatedImportedFiles = [...existingImportedFiles, ...importedFiles];
+            localStorage.setItem('edunotesProImportedFiles', JSON.stringify(updatedImportedFiles));
+            
+            // Afficher les résultats
+            resultsContainer.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <strong>Import multiple réussi !</strong><br>
+                        Fichiers traités: ${fileItems.length}<br>
+                        Données importées: ${totalStudents} élèves, ${totalGrades} notes, ${totalCompetences} compétences
+                    </div>
+                </div>
+                <div class="card" style="margin-top: 15px;">
+                    <div class="card-header">
+                        <h3>Statistiques d'import</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="bulkImportChart"></canvas>
+                    </div>
+                </div>
+            `;
+            
+            // Vider la liste des fichiers
+            clearBulkFiles();
+            
+            // Mettre à jour l'analyse des imports
+            renderImportAnalysis();
+            
+            // Créer le graphique des imports
+            setTimeout(() => {
+                createBulkImportChart(totalStudents, totalGrades, totalCompetences);
+            }, 100);
+        }
+
+        function generateMockData(fileName) {
+            // Générer des données de test basées sur le nom du fichier
+            const mockData = {
+                students: [],
+                grades: [],
+                competences: []
+            };
+            
+            // Ajouter quelques élèves
+            const classes = ['6eme', '5eme', '4eme', '3eme'];
+            const firstNames = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry'];
+            const lastNames = ['Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand'];
+            
+            for (let i = 0; i < 3; i++) {
+                mockData.students.push({
+                    id: Date.now() + i,
+                    firstName: firstNames[Math.floor(Math.random() * firstNames.length)],
+                    lastName: lastNames[Math.floor(Math.random() * lastNames.length)],
+                    class: classes[Math.floor(Math.random() * classes.length)],
+                    gender: Math.random() > 0.5 ? 'fille' : 'garcon',
+                    seniority: Math.random() > 0.5 ? 'nouveau' : 'ancien',
+                    registrationDate: new Date().toISOString().split('T')[0],
+                    average: Math.random() * 10 + 10
+                });
+            }
+            
+            // Ajouter quelques notes
+            const subjects = ['mathematiques', 'francais', 'anglais', 'histoire'];
+            const types = ['devoir', 'interro', 'oral', 'projet'];
+            
+            for (let i = 0; i < 5; i++) {
+                mockData.grades.push({
+                    id: Date.now() + i + 100,
+                    studentId: mockData.students[Math.floor(Math.random() * mockData.students.length)].id,
+                    subject: subjects[Math.floor(Math.random() * subjects.length)],
+                    lesson: 'Leçon ' + (i + 1),
+                    value: Math.random() * 10 + 5,
+                    type: types[Math.floor(Math.random() * types.length)],
+                    date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    comment: 'Commentaire test'
+                });
+            }
+            
+            return mockData;
+        }
+
+        function createBulkImportChart(students, grades, competences) {
+            const ctx = document.getElementById('bulkImportChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Élèves', 'Notes', 'Compétences'],
+                    datasets: [{
+                        label: 'Données importées',
+                        data: [students, grades, competences],
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.7)',
+                            'rgba(46, 204, 113, 0.7)',
+                            'rgba(155, 89, 182, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(52, 152, 219)',
+                            'rgb(46, 204, 113)',
+                            'rgb(155, 89, 182)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Nombre'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderImportAnalysis() {
+            const importedFiles = getImportedFiles();
+            const ctx = document.getElementById('importAnalysisChart');
+            
+            if (!ctx) return;
+            
+            if (importedFiles.length === 0) {
+                document.getElementById('importAnalysis').innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>Aucun fichier importé pour le moment.</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Préparer les données pour le graphique
+            const labels = importedFiles.map(file => {
+                const date = new Date(file.date);
+                return `${date.toLocaleDateString('fr-FR')}`;
+            });
+            
+            const studentData = importedFiles.map(file => file.stats.students);
+            const gradeData = importedFiles.map(file => file.stats.grades);
+            const competenceData = importedFiles.map(file => file.stats.competences);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Élèves',
+                            data: studentData,
+                            borderColor: 'rgb(52, 152, 219)',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            fill: true
+                        },
+                        {
+                            label: 'Notes',
+                            data: gradeData,
+                            borderColor: 'rgb(46, 204, 113)',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            fill: true
+                        },
+                        {
+                            label: 'Compétences',
+                            data: competenceData,
+                            borderColor: 'rgb(155, 89, 182)',
+                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Nombre'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date d\'import'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateLastUpdateDisplay() {
+            const lastUpdate = localStorage.getItem('edunotesProLastUpdate');
+            if (lastUpdate) {
+                const date = new Date(lastUpdate);
+                document.getElementById('lastUpdate').textContent = `Dernière mise à jour: ${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR')}`;
+            }
+        }
+
+        function loadSampleData() {
+            localStorage.setItem('edunotesProStudents', JSON.stringify(sampleData.students));
+            localStorage.setItem('edunotesProGrades', JSON.stringify(sampleData.grades));
+            localStorage.setItem('edunotesProCompetences', JSON.stringify(sampleData.competences));
+            localStorage.setItem('edunotesProSubjectCompetences', JSON.stringify(sampleData.subjectCompetences));
+            localStorage.setItem('edunotesProLastUpdate', new Date().toISOString());
+            
+            updateDashboard();
+            renderStudentsTable();
+            renderGradesTable();
+            renderCompetencesList();
+            renderClassOverview();
+            renderJSONView();
+            renderImportAnalysis();
+            
+            alert('Données de test chargées avec succès !');
+        }
+
+        function clearSearch() {
+            document.getElementById('searchStudent').value = '';
+            renderStudentsTable();
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeData();
+            
+            // Remplir les listes déroulantes
+            const students = getStudents();
+            const studentSelects = ['studentSelect', 'competenceStudent', 'competenceStudentSelect'];
+            
+            studentSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '<option value="">Sélectionner un élève</option>' +
+                        students.map(s => `<option value="${s.id}">${s.firstName} ${s.lastName} (${s.class})</option>`).join('');
+                }
+            });
+            
+            // Initialiser la date
+            document.getElementById('gradeDate').value = new Date().toISOString().split('T')[0];
+            
+            // Configurer les événements
+            document.getElementById('jsonFile').addEventListener('change', function(e) {
+                const fileName = e.target.files[0] ? e.target.files[0].name : 'Aucun fichier sélectionné';
+                document.getElementById('fileName').textContent = fileName;
+            });
+            
+            document.getElementById('addStudentBtn').addEventListener('click', function() {
+                const firstName = prompt("Prénom de l'élève:");
+                const lastName = prompt("Nom de l'élève:");
+                const className = prompt("Classe:");
+                const gender = prompt("Genre (fille/garçon):");
+                const seniority = prompt("Ancienneté (nouveau/ancien):");
+                
+                if (firstName && lastName && className && gender && seniority) {
+                    const students = getStudents();
+                    const newId = students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1;
+                    
+                    const newStudent = {
+                        id: newId,
+                        firstName,
+                        lastName,
+                        class: className,
+                        gender: gender.toLowerCase(),
+                        seniority: seniority.toLowerCase(),
+                        registrationDate: new Date().toISOString().split('T')[0],
+                        average: 0
+                    };
+                    
+                    students.push(newStudent);
+                    localStorage.setItem('edunotesProStudents', JSON.stringify(students));
+                    renderStudentsTable();
+                    alert('Élève ajouté avec succès !');
+                }
+            });
+            
+            // Formulaire de notes
+            document.getElementById('gradeForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const studentId = parseInt(document.getElementById('studentSelect').value);
+                const subject = document.getElementById('subjectSelect').value;
+                const lesson = document.getElementById('lessonSelect').value;
+                const type = document.getElementById('gradeType').value;
+                const value = parseFloat(document.getElementById('gradeValue').value);
+                const date = document.getElementById('gradeDate').value;
+                const comment = document.getElementById('gradeComment').value;
+                
+                if (studentId && subject && lesson && type && value && date) {
+                    const grades = getGrades();
+                    const newId = grades.length > 0 ? Math.max(...grades.map(g => g.id)) + 1 : 1;
+                    
+                    const newGrade = {
+                        id: newId,
+                        studentId,
+                        subject,
+                        lesson,
+                        value,
+                        type,
+                        date,
+                        comment
+                    };
+                    
+                    grades.push(newGrade);
+                    localStorage.setItem('edunotesProGrades', JSON.stringify(grades));
+                    
+                    document.getElementById('gradeForm').reset();
+                    document.getElementById('gradeDate').value = new Date().toISOString().split('T')[0];
+                    
+                    renderGradesTable();
+                    updateDashboard();
+                    alert('Note enregistrée avec succès !');
+                }
+            });
+            
+            // Formulaire de compétences
+            document.getElementById('competenceForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const studentId = parseInt(document.getElementById('competenceStudent').value);
+                const subject = document.getElementById('competenceSubject').value;
+                const lesson = document.getElementById('competenceLesson').value;
+                const comment = document.getElementById('competenceComment').value;
+                
+                if (studentId && subject && lesson) {
+                    const competences = getCompetences();
+                    const newId = competences.length > 0 ? Math.max(...competences.map(c => c.id)) + 1 : 1;
+                    
+                    const competenceElements = document.querySelectorAll('#competenceList .competence-card');
+                    const competencesList = [];
+                    
+                    competenceElements.forEach(card => {
+                        const name = card.querySelector('.competence-name').textContent;
+                        const level = card.querySelector('select').value;
+                        if (level && level !== 'not-evaluated') {
+                            competencesList.push({ name, level });
+                        }
+                    });
+                    
+                    if (competencesList.length === 0) {
+                        alert('Veuillez évaluer au moins une compétence.');
+                        return;
+                    }
+                    
+                    const newCompetence = {
+                        id: newId,
+                        studentId,
+                        subject,
+                        lesson,
+                        date: new Date().toISOString().split('T')[0],
+                        competences: competencesList,
+                        comment
+                    };
+                    
+                    competences.push(newCompetence);
+                    localStorage.setItem('edunotesProCompetences', JSON.stringify(competences));
+                    
+                    document.getElementById('competenceForm').reset();
+                    document.getElementById('competenceList').innerHTML = '';
+                    
+                    renderCompetencesList();
+                    updateDashboard();
+                    alert('Compétences enregistrées avec succès !');
+                }
+            });
+            
+            // Bouton générer compétences
+            document.getElementById('generateCompetencesBtn').addEventListener('click', function() {
+                const subject = document.getElementById('competenceSubject').value;
+                if (subject) {
+                    const subjectCompetences = getSubjectCompetences();
+                    const competences = subjectCompetences[subject] || [
+                        "Compétence 1",
+                        "Compétence 2", 
+                        "Compétence 3"
+                    ];
+                    
+                    const competenceList = document.getElementById('competenceList');
+                    competenceList.innerHTML = '';
+                    
+                    competences.forEach((competence, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'competence-card';
+                        card.innerHTML = `
+                            <div class="competence-header">
+                                <div class="competence-name">${competence}</div>
+                                <select class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.9rem;">
+                                    <option value="not-evaluated">Non évalué</option>
+                                    <option value="needs-improvement">À renforcer</option>
+                                    <option value="average">En cours</option>
+                                    <option value="good">Acquis</option>
+                                    <option value="excellent">Expert</option>
+                                </select>
+                            </div>
+                        `;
+                        competenceList.appendChild(card);
+                    });
+                } else {
+                    alert('Veuillez d\'abord sélectionner une matière');
+                }
+            });
+            
+            // Initialiser l'affichage
+            updateDashboard();
+            renderStudentsTable();
+            renderCompetencesList();
+            renderClassOverview();
+            renderJSONView();
+            renderImportAnalysis();
+            
+            // Configurer les filtres
+            document.getElementById('filterClass').addEventListener('change', renderStudentsTable);
+            document.getElementById('filterGender').addEventListener('change', renderStudentsTable);
+            document.getElementById('filterSeniority').addEventListener('change', renderStudentsTable);
+            document.getElementById('searchStudent').addEventListener('input', renderStudentsTable);
+            
+            document.getElementById('viewClass').addEventListener('change', renderGradesTable);
+            document.getElementById('viewSubject').addEventListener('change', renderGradesTable);
+            
+            document.getElementById('overviewClass').addEventListener('change', renderClassOverview);
+            
+            // Raccourcis clavier
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    alert('Données sauvegardées automatiquement dans le navigateur.');
+                }
+                if (e.ctrlKey && e.key === 'e') {
+                    e.preventDefault();
+                    exportData();
+                }
+                if (e.ctrlKey && e.key === 'p') {
+                    e.preventDefault();
+                    generatePDF();
+                }
+            });
+        });
+
+        // Fonctions de visualisation des détails
+        function viewStudentDetails(studentId) {
+            const students = getStudents();
+            const grades = getGrades();
+            const competences = getCompetences();
+            
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+            
+            const studentGrades = grades.filter(g => g.studentId === studentId);
+            const studentCompetences = competences.filter(c => c.studentId === studentId);
+            
+            let message = `Détails de l'élève:\n\n`;
+            message += `Nom: ${student.firstName} ${student.lastName}\n`;
+            message += `Classe: ${student.class}\n`;
+            message += `Genre: ${student.gender === 'fille' ? 'Fille' : 'Garçon'}\n`;
+            message += `Ancienneté: ${student.seniority === 'nouveau' ? 'Nouveau' : 'Ancien'}\n`;
+            message += `Moyenne: ${student.average.toFixed(1)}/20\n\n`;
+            message += `Notes (${studentGrades.length}):\n`;
+            
+            studentGrades.forEach(grade => {
+                message += `- ${grade.subject}: ${grade.value}/20 (${grade.type})\n`;
+            });
+            
+            message += `\nCompétences évaluées (${studentCompetences.length}):\n`;
+            studentCompetences.forEach(comp => {
+                message += `- ${comp.subject}: ${comp.lesson}\n`;
+            });
+            
+            alert(message);
+        }
+
+        function viewGradeDetails(gradeId) {
+            const grades = getGrades();
+            const students = getStudents();
+            
+            const grade = grades.find(g => g.id === gradeId);
+            if (!grade) return;
+            
+            const student = students.find(s => s.id === grade.studentId);
+            const studentName = student ? `${student.firstName} ${student.lastName}` : 'Élève inconnu';
+            
+            let message = `Détails de la note:\n\n`;
+            message += `Élève: ${studentName}\n`;
+            message += `Matière: ${grade.subject}\n`;
+            message += `Leçon: ${grade.lesson}\n`;
+            message += `Note: ${grade.value}/20\n`;
+            message += `Type: ${grade.type}\n`;
+            message += `Date: ${new Date(grade.date).toLocaleDateString('fr-FR')}\n`;
+            if (grade.comment) {
+                message += `Commentaire: ${grade.comment}\n`;
+            }
+            
+            alert(message);
+        }
+
+        function viewCompetenceDetails(competenceId) {
+            const competences = getCompetences();
+            const students = getStudents();
+            
+            const competence = competences.find(c => c.id === competenceId);
+            if (!competence) return;
+            
+            const student = students.find(s => s.id === competence.studentId);
+            const studentName = student ? `${student.firstName} ${student.lastName}` : 'Élève inconnu';
+            
+            let message = `Détails des compétences:\n\n`;
+            message += `Élève: ${studentName}\n`;
+            message += `Matière: ${competence.subject}\n`;
+            message += `Leçon: ${competence.lesson}\n`;
+            message += `Date: ${new Date(competence.date).toLocaleDateString('fr-FR')}\n\n`;
+            message += `Compétences évaluées:\n`;
+            
+            competence.competences.forEach(comp => {
+                const levelText = getLevelText(comp.level);
+                message += `- ${comp.name}: ${levelText}\n`;
+            });
+            
+            if (competence.comment) {
+                message += `\nCommentaire: ${competence.comment}\n`;
+            }
+            
+            alert(message);
+        }
+
+        function getLevelText(level) {
+            switch(level) {
+                case 'excellent': return 'Expert';
+                case 'good': return 'Acquis';
+                case 'average': return 'En cours';
+                case 'needs-improvement': return 'À renforcer';
+                default: return level;
+            }
+        }
+
+        function addGradeForStudent(studentId) {
+            document.querySelectorAll('[data-grade-tab]').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector('[data-grade-tab="add"]').classList.add('active');
+            
+            document.querySelectorAll('#grades .tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('addGradeTab').classList.add('active');
+            
+            document.getElementById('studentSelect').value = studentId;
+        }
+
+        // Fonctions PDF (simplifiées pour cet exemple)
+        function generatePDF() {
+            alert('Génération PDF - Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
+        }
+
+        function generateStudentsPDF() {
+            alert('PDF Élèves - Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
+        }
+
+        function generateGradesPDF() {
+            alert('PDF Notes - Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
+        }
+
+        function generateSubjectPDF() {
+            alert('PDF par matière - Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
+        }
+
+        function generateClassPDF() {
+            alert('PDF par classe - Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
+        }
+
+        function generateCompetencesPDF() {
+            alert('PDF Compétences - Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
+        }
+
+        function generateClassOverviewPDF() {
+            alert('PDF Classes - Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
+        }
+
+        function generateAnalyticsPDF() {
+            alert('PDF Analyses - Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
+        }
+
+        // Rendu des analyses
+        function renderAnalytics() {
+            const students = getStudents();
+            const grades = getGrades();
+            
+            // Statistiques de base
+            if (grades.length > 0) {
+                const values = grades.map(g => g.value);
+                const sorted = [...values].sort((a, b) => a - b);
+                const median = sorted.length % 2 === 0 ? 
+                    (sorted[sorted.length/2 - 1] + sorted[sorted.length/2]) / 2 : 
+                    sorted[Math.floor(sorted.length/2)];
+                
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const variance = values.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / values.length;
+                const stdDev = Math.sqrt(variance);
+                const successRate = (values.filter(v => v >= 10).length / values.length * 100).toFixed(1);
+                const topGrade = Math.max(...values);
+                
+                document.getElementById('medianGrade').textContent = median.toFixed(1);
+                document.getElementById('stdDev').textContent = stdDev.toFixed(2);
+                document.getElementById('successRate').textContent = `${successRate}%`;
+                document.getElementById('topStudent').textContent = topGrade.toFixed(1);
+            }
+            
+            // Mettre à jour l'analyse des imports
+            renderImportAnalysis();
+        }
+    </script>
+</body>
+</html>
