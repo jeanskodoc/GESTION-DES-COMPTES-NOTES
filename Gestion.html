@@ -1202,7 +1202,9 @@
                         <select id="filterSeniority" class="form-control">
                             <option value="all">Tous</option>
                             <option value="nouveau">Nouveaux</option>
+                            <option value="nouveau">Nouvelle</option>
                             <option value="ancien">Anciens</option>
+                             <option value="ancien">Ancienne </option>
                         </select>
                     </div>
                 </div>
@@ -1277,8 +1279,7 @@
                                     <option value="histoire">Histoire-Géographie</option>
                                     <option value="physique">Physique-Chimie</option>
                                     <option value="svt">SVT</option>
-                                    <option value="espagnol">Espagnol</option>
-                                    <option value="philosophie">Philosophie</option>
+                                    <option value="ecm">Ecm</option>
                                 </select>
                             </div>
                             
@@ -1528,10 +1529,12 @@
                         <label for="competenceSubjectFilter">Matière</label>
                         <select id="competenceSubjectFilter" class="form-control">
                             <option value="all">Toutes</option>
-                            <option value="mathematiques">Mathématiques</option>
-                            <option value="francais">Français</option>
-                            <option value="anglais">Anglais</option>
-                            <option value="histoire">Histoire-Géographie</option>
+                             <option value="mathematiques">Mathématiques</option>
+                                    <option value="francais">Français</option>
+                                    <option value="anglais">Anglais</option>
+                                    <option value="histoire">Histoire-Géographie</option>
+                                    <option value="physique">Physique-Chimie</option>
+                                    <option value="svt">SVT</option>
                         </select>
                     </div>
                 </div>
@@ -1656,6 +1659,8 @@
                             <option value="all">Toutes</option>
                             <option value="6eme">6ème</option>
                             <option value="5eme">5ème</option>
+                            <option value="4eme">4ème</option>
+                            <option value="3eme">3ème</option>
                         </select>
                     </div>
                     
@@ -1664,7 +1669,11 @@
                         <select id="analyticsSubject" class="form-control">
                             <option value="all">Toutes</option>
                             <option value="mathematiques">Mathématiques</option>
-                            <option value="francais">Français</option>
+                                    <option value="francais">Français</option>
+                                    <option value="anglais">Anglais</option>
+                                    <option value="histoire">Histoire-Géographie</option>
+                                    <option value="physique">Physique-Chimie</option>
+                                    <option value="svt">SVT</option>
                         </select>
                     </div>
                     
@@ -1778,7 +1787,7 @@
             </div>
             
             <div class="copyright">
-                <p>&copy; 2023 EduNotes Pro - Tous droits réservés. Version 2.0</p>
+                <p>&copy; 2026 EduNotes Pro - Tous droits réservés. Version 2.0</p>
             </div>
         </div>
     </footer>
@@ -1788,17 +1797,11 @@
         const sampleData = {
             students: [
                 { id: 1, firstName: "Emma", lastName: "Martin", class: "6eme", gender: "fille", seniority: "ancien", registrationDate: "2022-09-01", average: 15.2 },
-                { id: 2, firstName: "Lucas", lastName: "Bernard", class: "5eme", gender: "garcon", seniority: "ancien", registrationDate: "2022-09-01", average: 12.8 },
-                { id: 3, firstName: "Chloé", lastName: "Dubois", class: "4eme", gender: "fille", seniority: "nouveau", registrationDate: "2023-09-01", average: 14.5 },
-                { id: 4, firstName: "Hugo", lastName: "Thomas", class: "3eme", gender: "garcon", seniority: "ancien", registrationDate: "2021-09-01", average: 11.9 },
-                { id: 5, firstName: "Léa", lastName: "Robert", class: "2nde", gender: "fille", seniority: "nouveau", registrationDate: "2023-09-01", average: 13.7 }
+               
             ],
             grades: [
                 { id: 1, studentId: 1, subject: "mathematiques", lesson: "Théorème de Pythagore", value: 16, type: "devoir", date: "2023-10-15", comment: "Très bon travail" },
-                { id: 2, studentId: 1, subject: "francais", lesson: "Analyse de texte", value: 14, type: "interro", date: "2023-10-18", comment: "" },
-                { id: 3, studentId: 2, subject: "anglais", lesson: "Present perfect", value: 11.5, type: "oral", date: "2023-10-20", comment: "Peut mieux faire" },
-                { id: 4, studentId: 3, subject: "histoire", lesson: "La Révolution française", value: 15, type: "devoir", date: "2023-10-12", comment: "Excellent" },
-                { id: 5, studentId: 4, subject: "physique", lesson: "Les lois de Newton", value: 9.5, type: "examen", date: "2023-10-22", comment: "Des difficultés sur ce chapitre" }
+                
             ],
             competences: [
                 { id: 1, studentId: 1, subject: "mathematiques", lesson: "Théorème de Pythagore", date: "2023-10-15", 
