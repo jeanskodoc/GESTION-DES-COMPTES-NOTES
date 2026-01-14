@@ -727,6 +727,49 @@
             color: #7f8c8d;
         }
 
+        /* PDF generation status */
+        .pdf-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pdf-status.show {
+            display: flex;
+        }
+
+        .pdf-status.error {
+            background: var(--accent-color);
+        }
+
+        /* Modal for PDF preview */
+        .pdf-preview-modal {
+            max-width: 800px;
+            max-height: 90vh;
+        }
+
+        .pdf-preview {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            background: #f8f9fa;
+            display: none;
+        }
+
+        .pdf-preview.active {
+            display: block;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .header-content {
@@ -965,6 +1008,12 @@
     </style>
 </head>
 <body>
+    <!-- PDF Status Indicator -->
+    <div id="pdfStatus" class="pdf-status">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Génération du PDF en cours...</span>
+    </div>
+
     <!-- Modal pour confirmation suppression -->
     <div id="deleteModal" class="modal">
         <div class="modal-content">
@@ -1099,6 +1148,26 @@
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal('addStudentModal')">Annuler</button>
                 <button class="btn btn-success" onclick="saveNewStudent()">Enregistrer l'élève</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour prévisualisation PDF -->
+    <div id="pdfPreviewModal" class="modal">
+        <div class="modal-content pdf-preview-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Prévisualisation PDF</h3>
+                <button class="modal-close" onclick="closeModal('pdfPreviewModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="pdfPreview" class="pdf-preview"></div>
+                <div id="pdfPreviewContent" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('pdfPreviewModal')">Fermer</button>
+                <button class="btn btn-success" onclick="downloadCurrentPDF()">
+                    <i class="fas fa-download"></i> Télécharger
+                </button>
             </div>
         </div>
     </div>
@@ -2031,6 +2100,12 @@
         let itemToDelete = null;
         let deleteType = null;
         let charts = {};
+        let currentPDF = null;
+        let pdfData = {
+            title: '',
+            content: '',
+            fileName: ''
+        };
 
         // Initialisation des données
         function initializeData() {
@@ -2098,7 +2173,10 @@
                 });
                 
                 const tabId = this.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
+                const tabElement = document.getElementById(tabId);
+                if (tabElement) {
+                    tabElement.classList.add('active');
+                }
                 
                 // Mise à jour spécifique à chaque onglet
                 if (tabId === 'students') {
@@ -2137,19 +2215,20 @@
                     content.classList.remove('active');
                 });
                 
+                const tabContent = document.getElementById(tabId + 'GradeTab');
+                if (tabContent) {
+                    tabContent.classList.add('active');
+                }
+                
                 if (tabId === 'add') {
-                    document.getElementById('addGradeTab').classList.add('active');
+                    // Rien de spécifique
                 } else if (tabId === 'view') {
-                    document.getElementById('viewGradeTab').classList.add('active');
                     renderGradesTable();
                 } else if (tabId === 'competence') {
-                    document.getElementById('competenceGradeTab').classList.add('active');
                     updateCompetenceFormStudentSelect();
                 } else if (tabId === 'bulk') {
-                    document.getElementById('bulkGradeTab').classList.add('active');
                     initBulkUpload();
                 } else if (tabId === 'stats') {
-                    document.getElementById('statsGradeTab').classList.add('active');
                     updateGradeStatistics();
                 }
             });
@@ -2170,7 +2249,11 @@
                     content.classList.remove('active');
                 });
                 
-                document.getElementById(`json${tabId.charAt(0).toUpperCase() + tabId.slice(1)}Tab`).classList.add('active');
+                const tabContentId = 'json' + tabId.charAt(0).toUpperCase() + tabId.slice(1) + 'Tab';
+                const tabContent = document.getElementById(tabContentId);
+                if (tabContent) {
+                    tabContent.classList.add('active');
+                }
                 renderJSONView(tabId);
             });
         });
@@ -2220,19 +2303,24 @@
                 document.getElementById('recent-activity').textContent = recentGrades.length;
             }
             document.getElementById('avg-grade').textContent = avgGrade.toFixed(1);
-            document.getElementById('avg-progress').style.width = `${(avgGrade / 20) * 100}%`;
+            const avgProgress = document.getElementById('avg-progress');
+            if (avgProgress) {
+                avgProgress.style.width = `${(avgGrade / 20) * 100}%`;
+            }
             document.getElementById('grade-trend').textContent = gradeTrend;
             
             // Statistiques compétences
             let compExcellent = 0, compGood = 0, compAverage = 0, compNeeds = 0, totalComps = 0;
             competences.forEach(comp => {
-                comp.competences.forEach(c => {
-                    totalComps++;
-                    if (c.level === 'excellent') compExcellent++;
-                    else if (c.level === 'good') compGood++;
-                    else if (c.level === 'average') compAverage++;
-                    else if (c.level === 'needs-improvement') compNeeds++;
-                });
+                if (comp.competences) {
+                    comp.competences.forEach(c => {
+                        totalComps++;
+                        if (c.level === 'excellent') compExcellent++;
+                        else if (c.level === 'good') compGood++;
+                        else if (c.level === 'average') compAverage++;
+                        else if (c.level === 'needs-improvement') compNeeds++;
+                    });
+                }
             });
             
             const avgComp = totalComps > 0 ? Math.round(((compExcellent * 4 + compGood * 3 + compAverage * 2) / (totalComps * 4)) * 100) : 0;
@@ -2274,6 +2362,8 @@
         function renderStudentsTable() {
             const students = getStudents();
             const tbody = document.getElementById('studentsTableBody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
             
             const filterClass = document.getElementById('filterClass').value;
@@ -2337,6 +2427,8 @@
             const grades = getGrades();
             const students = getStudents();
             const tbody = document.getElementById('gradesTableBody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
             
             const filterClass = document.getElementById('viewClass').value;
@@ -2425,12 +2517,15 @@
             const competences = getCompetences();
             const students = getStudents();
             const container = document.getElementById('studentCompetenceDetails');
+            if (!container) return;
             
             const selectedStudent = document.getElementById('competenceStudentSelect').value;
             const selectedSubject = document.getElementById('competenceSubjectFilter').value;
             
             if (selectedStudent) {
                 const student = students.find(s => s.id == selectedStudent);
+                if (!student) return;
+                
                 const studentCompetences = competences.filter(c => c.studentId == selectedStudent);
                 
                 if (studentCompetences.length === 0) {
@@ -2494,6 +2589,8 @@
             const grades = getGrades();
             const classes = [...new Set(students.map(s => s.class))].sort();
             const container = document.getElementById('classOverviewContent');
+            if (!container) return;
+            
             container.innerHTML = '';
             
             const selectedClass = document.getElementById('overviewClass').value;
@@ -2576,23 +2673,35 @@
             };
             
             if (type === 'students' || type === 'all') {
-                document.getElementById('jsonStudentsViewer').innerHTML = formatJSON(getStudents());
+                const viewer = document.getElementById('jsonStudentsViewer');
+                if (viewer) {
+                    viewer.innerHTML = formatJSON(getStudents());
+                }
             }
             if (type === 'grades' || type === 'all') {
-                document.getElementById('jsonGradesViewer').innerHTML = formatJSON(getGrades());
+                const viewer = document.getElementById('jsonGradesViewer');
+                if (viewer) {
+                    viewer.innerHTML = formatJSON(getGrades());
+                }
             }
             if (type === 'competences' || type === 'all') {
-                document.getElementById('jsonCompetencesViewer').innerHTML = formatJSON(getCompetences());
+                const viewer = document.getElementById('jsonCompetencesViewer');
+                if (viewer) {
+                    viewer.innerHTML = formatJSON(getCompetences());
+                }
             }
             if (type === 'all') {
-                const allData = {
-                    students: getStudents(),
-                    grades: getGrades(),
-                    competences: getCompetences(),
-                    lastUpdate: localStorage.getItem('edunotesProLastUpdate'),
-                    importedFiles: getImportedFiles()
-                };
-                document.getElementById('jsonAllViewer').innerHTML = formatJSON(allData);
+                const viewer = document.getElementById('jsonAllViewer');
+                if (viewer) {
+                    const allData = {
+                        students: getStudents(),
+                        grades: getGrades(),
+                        competences: getCompetences(),
+                        lastUpdate: localStorage.getItem('edunotesProLastUpdate'),
+                        importedFiles: getImportedFiles()
+                    };
+                    viewer.innerHTML = formatJSON(allData);
+                }
             }
         }
 
@@ -2630,11 +2739,17 @@
 
         // Gestion des modales
         function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+            }
         }
 
         function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
         }
 
         // Confirmation de suppression
@@ -2921,6 +3036,8 @@
             const uploadArea = document.getElementById('bulkUploadArea');
             const fileInput = document.getElementById('bulkFileInput');
             
+            if (!uploadArea || !fileInput) return;
+            
             uploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadArea.style.borderColor = 'var(--secondary-color)';
@@ -2953,6 +3070,7 @@
 
         function handleBulkFiles(files) {
             const uploadedFilesContainer = document.getElementById('uploadedFiles');
+            if (!uploadedFilesContainer) return;
             
             for (let file of files) {
                 if (file.type === 'application/json' || file.name.endsWith('.json')) {
@@ -2965,6 +3083,7 @@
 
         function addFileToList(file) {
             const uploadedFilesContainer = document.getElementById('uploadedFiles');
+            if (!uploadedFilesContainer) return;
             
             const fileItem = document.createElement('div');
             fileItem.className = 'file-item';
@@ -2998,7 +3117,10 @@
         }
 
         function clearBulkFiles() {
-            document.getElementById('uploadedFiles').innerHTML = '';
+            const uploadedFilesContainer = document.getElementById('uploadedFiles');
+            if (uploadedFilesContainer) {
+                uploadedFilesContainer.innerHTML = '';
+            }
         }
 
         async function processBulkImport() {
@@ -3006,21 +3128,25 @@
             const resultsContainer = document.getElementById('bulkImportResults');
             
             if (fileItems.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <div>Aucun fichier à importer.</div>
-                    </div>
-                `;
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>Aucun fichier à importer.</div>
+                        </div>
+                    `;
+                }
                 return;
             }
             
-            resultsContainer.innerHTML = `
-                <div class="alert alert-info">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <div>Traitement des fichiers en cours...</div>
-                </div>
-            `;
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <div>Traitement des fichiers en cours...</div>
+                    </div>
+                `;
+            }
             
             let totalImported = {
                 students: 0,
@@ -3064,24 +3190,26 @@
             localStorage.setItem('edunotesProImportedFiles', JSON.stringify(updatedImportedFiles));
             
             // Afficher les résultats
-            resultsContainer.innerHTML = `
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i>
-                    <div>
-                        <strong>Import multiple réussi !</strong><br>
-                        Fichiers traités: ${fileItems.length}<br>
-                        Données importées: ${totalImported.students} élèves, ${totalImported.grades} notes, ${totalImported.competences} compétences
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <strong>Import multiple réussi !</strong><br>
+                            Fichiers traités: ${fileItems.length}<br>
+                            Données importées: ${totalImported.students} élèves, ${totalImported.grades} notes, ${totalImported.competences} compétences
+                        </div>
                     </div>
-                </div>
-                <div class="card" style="margin-top: 15px;">
-                    <div class="card-header">
-                        <h3>Statistiques d'import</h3>
+                    <div class="card" style="margin-top: 15px;">
+                        <div class="card-header">
+                            <h3>Statistiques d'import</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="bulkImportChart"></canvas>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="bulkImportChart"></canvas>
-                    </div>
-                </div>
-            `;
+                `;
+            }
             
             // Vider la liste des fichiers
             clearBulkFiles();
@@ -3161,15 +3289,17 @@
             let totalCompetences = 0;
             
             studentCompetences.forEach(comp => {
-                comp.competences.forEach(c => {
-                    totalCompetences++;
-                    switch(c.level) {
-                        case 'excellent': totalLevels += 4; break;
-                        case 'good': totalLevels += 3; break;
-                        case 'average': totalLevels += 2; break;
-                        case 'needs-improvement': totalLevels += 1; break;
-                    }
-                });
+                if (comp.competences) {
+                    comp.competences.forEach(c => {
+                        totalCompetences++;
+                        switch(c.level) {
+                            case 'excellent': totalLevels += 4; break;
+                            case 'good': totalLevels += 3; break;
+                            case 'average': totalLevels += 2; break;
+                            case 'needs-improvement': totalLevels += 1; break;
+                        }
+                    });
+                }
             });
             
             return Math.round((totalLevels / (totalCompetences * 4)) * 100);
@@ -3470,12 +3600,14 @@
             
             let compExcellent = 0, compGood = 0, compAverage = 0, compNeeds = 0;
             competences.forEach(comp => {
-                comp.competences.forEach(c => {
-                    if (c.level === 'excellent') compExcellent++;
-                    else if (c.level === 'good') compGood++;
-                    else if (c.level === 'average') compAverage++;
-                    else if (c.level === 'needs-improvement') compNeeds++;
-                });
+                if (comp.competences) {
+                    comp.competences.forEach(c => {
+                        if (c.level === 'excellent') compExcellent++;
+                        else if (c.level === 'good') compGood++;
+                        else if (c.level === 'average') compAverage++;
+                        else if (c.level === 'needs-improvement') compNeeds++;
+                    });
+                }
             });
             
             if (charts.globalCompetenceChart) {
@@ -3517,12 +3649,15 @@
             if (!ctx) return;
             
             if (importedFiles.length === 0) {
-                document.getElementById('importAnalysis').innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <div>Aucun fichier importé pour le moment.</div>
-                    </div>
-                `;
+                const importAnalysis = document.getElementById('importAnalysis');
+                if (importAnalysis) {
+                    importAnalysis.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <div>Aucun fichier importé pour le moment.</div>
+                        </div>
+                    `;
+                }
                 return;
             }
             
@@ -3702,7 +3837,10 @@
             const lastUpdate = localStorage.getItem('edunotesProLastUpdate');
             if (lastUpdate) {
                 const date = new Date(lastUpdate);
-                document.getElementById('lastUpdate').textContent = `Dernière mise à jour: ${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR')}`;
+                const lastUpdateElement = document.getElementById('lastUpdate');
+                if (lastUpdateElement) {
+                    lastUpdateElement.textContent = `Dernière mise à jour: ${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR')}`;
+                }
             }
         }
 
@@ -3718,8 +3856,11 @@
         }
 
         function clearSearch() {
-            document.getElementById('searchStudent').value = '';
-            renderStudentsTable();
+            const searchInput = document.getElementById('searchStudent');
+            if (searchInput) {
+                searchInput.value = '';
+                renderStudentsTable();
+            }
         }
 
         // Gestion des formulaires
@@ -3754,10 +3895,1339 @@
             localStorage.setItem('edunotesProStudents', JSON.stringify(students));
             
             closeModal('addStudentModal');
-            document.getElementById('addStudentForm').reset();
+            const addStudentForm = document.getElementById('addStudentForm');
+            if (addStudentForm) {
+                addStudentForm.reset();
+            }
             
             updateAllDisplays();
             alert('Élève ajouté avec succès !');
+        }
+
+        // PDF Functions
+        function showPDFStatus(message, isError = false) {
+            const status = document.getElementById('pdfStatus');
+            if (status) {
+                status.innerHTML = `<i class="fas fa-${isError ? 'exclamation-triangle' : 'spinner fa-spin'}"></i> <span>${message}</span>`;
+                status.className = `pdf-status ${isError ? 'error' : ''} show`;
+                
+                if (!isError) {
+                    setTimeout(() => {
+                        status.classList.remove('show');
+                    }, 3000);
+                }
+            }
+        }
+
+        function hidePDFStatus() {
+            const status = document.getElementById('pdfStatus');
+            if (status) {
+                status.classList.remove('show');
+            }
+        }
+
+        function generateCompletePDF() {
+            showPDFStatus('Génération du PDF complet en cours...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const students = getStudents();
+            const grades = getGrades();
+            const competences = getCompetences();
+            const importedFiles = getImportedFiles();
+            
+            // Titre
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Rapport Complet - EduNotes Pro', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, 105, 28, { align: 'center' });
+            
+            let yPos = 40;
+            
+            // Statistiques globales
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Statistiques Globales', 20, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            
+            // Tableau des statistiques
+            const statsData = [
+                ['Élèves', students.length],
+                ['Filles', students.filter(s => s.gender === 'fille').length],
+                ['Garçons', students.filter(s => s.gender === 'garcon').length],
+                ['Notes enregistrées', grades.length],
+                ['Compétences évaluées', competences.length],
+                ['Fichiers importés', importedFiles.length]
+            ];
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [['Statistique', 'Valeur']],
+                body: statsData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                margin: { top: 10 }
+            });
+            
+            yPos = doc.lastAutoTable.finalY + 15;
+            
+            // Liste des élèves
+            doc.addPage();
+            yPos = 20;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Liste des Élèves', 20, yPos);
+            yPos += 10;
+            
+            const studentsData = students.map(s => [
+                s.id,
+                `${s.firstName} ${s.lastName}`,
+                s.class,
+                s.gender === 'fille' ? 'Fille' : 'Garçon',
+                s.seniority === 'nouveau' ? 'Nouveau' : 'Ancien',
+                s.average.toFixed(1)
+            ]);
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [['ID', 'Nom', 'Classe', 'Genre', 'Ancienneté', 'Moyenne']],
+                body: studentsData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    5: { halign: 'center' }
+                }
+            });
+            
+            // Notes par matière
+            doc.addPage();
+            yPos = 20;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Notes par Matière', 20, yPos);
+            yPos += 10;
+            
+            // Grouper les notes par matière
+            const subjects = {};
+            grades.forEach(grade => {
+                if (!subjects[grade.subject]) {
+                    subjects[grade.subject] = {
+                        grades: [],
+                        average: 0
+                    };
+                }
+                subjects[grade.subject].grades.push(grade.value);
+            });
+            
+            // Calculer les moyennes
+            Object.keys(subjects).forEach(subject => {
+                const gradesList = subjects[subject].grades;
+                subjects[subject].average = gradesList.length > 0 ? 
+                    (gradesList.reduce((a, b) => a + b, 0) / gradesList.length).toFixed(1) : 0;
+            });
+            
+            const subjectData = Object.keys(subjects).map(subject => [
+                getSubjectName(subject),
+                subjects[subject].grades.length,
+                subjects[subject].average
+            ]);
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [['Matière', 'Nombre de notes', 'Moyenne']],
+                body: subjectData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    1: { halign: 'center' },
+                    2: { halign: 'center' }
+                }
+            });
+            
+            // Compétences
+            if (competences.length > 0) {
+                doc.addPage();
+                yPos = 20;
+                
+                doc.setFontSize(16);
+                doc.setTextColor(44, 62, 80);
+                doc.text('Compétences Évaluées', 20, yPos);
+                yPos += 10;
+                
+                const competenceData = competences.map(c => {
+                    const student = students.find(s => s.id === c.studentId);
+                    const studentName = student ? `${student.firstName} ${student.lastName}` : 'Inconnu';
+                    return [
+                        studentName,
+                        getSubjectName(c.subject),
+                        c.lesson,
+                        c.competences ? c.competences.length : 0,
+                        new Date(c.date).toLocaleDateString('fr-FR')
+                    ];
+                });
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Élève', 'Matière', 'Leçon', 'Nb Compétences', 'Date']],
+                    body: competenceData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    columnStyles: {
+                        3: { halign: 'center' },
+                        4: { halign: 'center' }
+                    }
+                });
+            }
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} / ${pageCount}`, 105, 287, { align: 'center' });
+                doc.text('EduNotes Pro - Rapport Complet', 105, 292, { align: 'center' });
+            }
+            
+            // Sauvegarder le PDF
+            const fileName = `edunotes-rapport-complet-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            // Enregistrer les données pour prévisualisation
+            pdfData = {
+                title: 'Rapport Complet',
+                content: doc.output('datauristring'),
+                fileName: fileName
+            };
+            
+            showPDFStatus('PDF généré avec succès !');
+        }
+
+        function generateStudentsPDF() {
+            showPDFStatus('Génération du PDF élèves en cours...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const students = getStudents();
+            
+            // Titre
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Liste des Élèves - EduNotes Pro', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} - Total: ${students.length} élèves`, 105, 28, { align: 'center' });
+            
+            // Tableau des élèves
+            const studentsData = students.map(s => [
+                s.id,
+                `${s.firstName} ${s.lastName}`,
+                s.class,
+                s.gender === 'fille' ? 'Fille' : 'Garçon',
+                s.seniority === 'nouveau' ? 'Nouveau' : 'Ancien',
+                s.average.toFixed(1),
+                calculateStudentCompetenceLevel(s.id) + '%'
+            ]);
+            
+            doc.autoTable({
+                startY: 35,
+                head: [['ID', 'Nom', 'Classe', 'Genre', 'Ancienneté', 'Moyenne', 'Compétences']],
+                body: studentsData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    5: { halign: 'center' },
+                    6: { halign: 'center' }
+                },
+                margin: { top: 10 }
+            });
+            
+            // Statistiques
+            const finalY = doc.lastAutoTable.finalY + 15;
+            doc.setFontSize(12);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Statistiques:', 20, finalY);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            
+            const girls = students.filter(s => s.gender === 'fille').length;
+            const boys = students.filter(s => s.gender === 'garcon').length;
+            const newStudents = students.filter(s => s.seniority === 'nouveau').length;
+            const oldStudents = students.filter(s => s.seniority === 'ancien').length;
+            
+            doc.text(`• Filles: ${girls} (${((girls/students.length)*100).toFixed(1)}%)`, 30, finalY + 8);
+            doc.text(`• Garçons: ${boys} (${((boys/students.length)*100).toFixed(1)}%)`, 30, finalY + 16);
+            doc.text(`• Nouveaux élèves: ${newStudents}`, 30, finalY + 24);
+            doc.text(`• Anciens élèves: ${oldStudents}`, 30, finalY + 32);
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} / ${pageCount}`, 105, 287, { align: 'center' });
+                doc.text('EduNotes Pro - Liste des Élèves', 105, 292, { align: 'center' });
+            }
+            
+            const fileName = `edunotes-eleves-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            pdfData = {
+                title: 'Liste des Élèves',
+                content: doc.output('datauristring'),
+                fileName: fileName
+            };
+            
+            showPDFStatus('PDF élèves généré avec succès !');
+        }
+
+        function generateGradesPDF() {
+            showPDFStatus('Génération du PDF notes en cours...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const grades = getGrades();
+            const students = getStudents();
+            
+            // Titre
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Notes des Élèves - EduNotes Pro', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} - Total: ${grades.length} notes`, 105, 28, { align: 'center' });
+            
+            // Tableau des notes
+            const gradesData = grades.map(g => {
+                const student = students.find(s => s.id === g.studentId);
+                const studentName = student ? `${student.firstName} ${student.lastName}` : 'Inconnu';
+                const className = student ? student.class : 'Inconnu';
+                return [
+                    studentName,
+                    className,
+                    getSubjectName(g.subject),
+                    g.lesson,
+                    g.value.toFixed(1),
+                    getGradeTypeName(g.type),
+                    new Date(g.date).toLocaleDateString('fr-FR')
+                ];
+            });
+            
+            doc.autoTable({
+                startY: 35,
+                head: [['Élève', 'Classe', 'Matière', 'Leçon', 'Note', 'Type', 'Date']],
+                body: gradesData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    4: { halign: 'center' },
+                    6: { halign: 'center' }
+                },
+                margin: { top: 10 }
+            });
+            
+            // Statistiques
+            const finalY = doc.lastAutoTable.finalY + 15;
+            
+            if (grades.length > 0) {
+                doc.addPage();
+                let yPos = 20;
+                
+                doc.setFontSize(16);
+                doc.setTextColor(44, 62, 80);
+                doc.text('Statistiques des Notes', 20, yPos);
+                yPos += 10;
+                
+                const values = grades.map(g => g.value);
+                const sorted = [...values].sort((a, b) => a - b);
+                const median = sorted.length % 2 === 0 ? 
+                    (sorted[sorted.length/2 - 1] + sorted[sorted.length/2]) / 2 : 
+                    sorted[Math.floor(sorted.length/2)];
+                
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const variance = values.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / values.length;
+                const stdDev = Math.sqrt(variance);
+                const successRate = (values.filter(v => v >= 10).length / values.length * 100).toFixed(1);
+                const topGrade = Math.max(...values);
+                const lowestGrade = Math.min(...values);
+                
+                const statsData = [
+                    ['Moyenne générale', mean.toFixed(1)],
+                    ['Médiane', median.toFixed(1)],
+                    ['Écart-type', stdDev.toFixed(2)],
+                    ['Taux de réussite', successRate + '%'],
+                    ['Meilleure note', topGrade.toFixed(1)],
+                    ['Plus basse note', lowestGrade.toFixed(1)]
+                ];
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Statistique', 'Valeur']],
+                    body: statsData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    columnStyles: {
+                        1: { halign: 'center' }
+                    }
+                });
+                
+                // Notes par matière
+                yPos = doc.lastAutoTable.finalY + 15;
+                
+                doc.setFontSize(16);
+                doc.setTextColor(44, 62, 80);
+                doc.text('Notes par Matière', 20, yPos);
+                yPos += 10;
+                
+                const subjects = {};
+                grades.forEach(grade => {
+                    if (!subjects[grade.subject]) {
+                        subjects[grade.subject] = {
+                            grades: [],
+                            average: 0,
+                            count: 0
+                        };
+                    }
+                    subjects[grade.subject].grades.push(grade.value);
+                    subjects[grade.subject].count++;
+                });
+                
+                Object.keys(subjects).forEach(subject => {
+                    const gradesList = subjects[subject].grades;
+                    subjects[subject].average = gradesList.length > 0 ? 
+                        (gradesList.reduce((a, b) => a + b, 0) / gradesList.length).toFixed(1) : 0;
+                });
+                
+                const subjectStats = Object.keys(subjects).map(subject => [
+                    getSubjectName(subject),
+                    subjects[subject].count,
+                    subjects[subject].average
+                ]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Matière', 'Nombre de notes', 'Moyenne']],
+                    body: subjectStats,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    columnStyles: {
+                        1: { halign: 'center' },
+                        2: { halign: 'center' }
+                    }
+                });
+            }
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} / ${pageCount}`, 105, 287, { align: 'center' });
+                doc.text('EduNotes Pro - Notes des Élèves', 105, 292, { align: 'center' });
+            }
+            
+            const fileName = `edunotes-notes-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            pdfData = {
+                title: 'Notes des Élèves',
+                content: doc.output('datauristring'),
+                fileName: fileName
+            };
+            
+            showPDFStatus('PDF notes généré avec succès !');
+        }
+
+        function generateSubjectPDF() {
+            const subject = document.getElementById('viewSubject').value;
+            if (subject === 'all') {
+                alert('Veuillez sélectionner une matière spécifique');
+                return;
+            }
+            
+            showPDFStatus(`Génération du PDF pour ${getSubjectName(subject)} en cours...`);
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const grades = getGrades();
+            const students = getStudents();
+            const filteredGrades = grades.filter(g => g.subject === subject);
+            
+            // Titre
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text(`Notes - ${getSubjectName(subject)}`, 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} - ${filteredGrades.length} notes`, 105, 28, { align: 'center' });
+            
+            if (filteredGrades.length === 0) {
+                doc.setFontSize(14);
+                doc.text('Aucune note pour cette matière', 105, 50, { align: 'center' });
+            } else {
+                // Tableau des notes
+                const gradesData = filteredGrades.map(g => {
+                    const student = students.find(s => s.id === g.studentId);
+                    const studentName = student ? `${student.firstName} ${student.lastName}` : 'Inconnu';
+                    const className = student ? student.class : 'Inconnu';
+                    return [
+                        studentName,
+                        className,
+                        g.lesson,
+                        g.value.toFixed(1),
+                        getGradeTypeName(g.type),
+                        new Date(g.date).toLocaleDateString('fr-FR')
+                    ];
+                });
+                
+                doc.autoTable({
+                    startY: 35,
+                    head: [['Élève', 'Classe', 'Leçon', 'Note', 'Type', 'Date']],
+                    body: gradesData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    columnStyles: {
+                        3: { halign: 'center' },
+                        5: { halign: 'center' }
+                    },
+                    margin: { top: 10 }
+                });
+                
+                // Statistiques
+                const finalY = doc.lastAutoTable.finalY + 15;
+                
+                doc.setFontSize(16);
+                doc.setTextColor(44, 62, 80);
+                doc.text('Statistiques', 20, finalY);
+                
+                const values = filteredGrades.map(g => g.value);
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const successRate = (values.filter(v => v >= 10).length / values.length * 100).toFixed(1);
+                const topGrade = Math.max(...values);
+                const lowestGrade = Math.min(...values);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`• Moyenne: ${mean.toFixed(1)}/20`, 30, finalY + 10);
+                doc.text(`• Taux de réussite: ${successRate}%`, 30, finalY + 18);
+                doc.text(`• Meilleure note: ${topGrade.toFixed(1)}/20`, 30, finalY + 26);
+                doc.text(`• Plus basse note: ${lowestGrade.toFixed(1)}/20`, 30, finalY + 34);
+            }
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} / ${pageCount}`, 105, 287, { align: 'center' });
+                doc.text(`EduNotes Pro - ${getSubjectName(subject)}`, 105, 292, { align: 'center' });
+            }
+            
+            const fileName = `edunotes-${subject}-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            pdfData = {
+                title: `Notes - ${getSubjectName(subject)}`,
+                content: doc.output('datauristring'),
+                fileName: fileName
+            };
+            
+            showPDFStatus('PDF par matière généré avec succès !');
+        }
+
+        function generateClassPDF() {
+            const className = document.getElementById('viewClass').value;
+            if (className === 'all') {
+                alert('Veuillez sélectionner une classe spécifique');
+                return;
+            }
+            
+            showPDFStatus(`Génération du PDF pour la classe ${className} en cours...`);
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const students = getStudents();
+            const grades = getGrades();
+            const classStudents = students.filter(s => s.class === className);
+            const classGrades = grades.filter(g => {
+                const student = students.find(s => s.id === g.studentId);
+                return student && student.class === className;
+            });
+            
+            // Titre
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text(`Classe de ${className} - EduNotes Pro`, 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} - ${classStudents.length} élèves`, 105, 28, { align: 'center' });
+            
+            // Liste des élèves
+            const studentsData = classStudents.map(s => [
+                s.id,
+                `${s.firstName} ${s.lastName}`,
+                s.gender === 'fille' ? 'Fille' : 'Garçon',
+                s.seniority === 'nouveau' ? 'Nouveau' : 'Ancien',
+                s.average.toFixed(1)
+            ]);
+            
+            doc.autoTable({
+                startY: 35,
+                head: [['ID', 'Nom', 'Genre', 'Ancienneté', 'Moyenne']],
+                body: studentsData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    4: { halign: 'center' }
+                },
+                margin: { top: 10 }
+            });
+            
+            // Statistiques de la classe
+            const finalY = doc.lastAutoTable.finalY + 15;
+            
+            doc.addPage();
+            let yPos = 20;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text(`Statistiques de la classe ${className}`, 20, yPos);
+            yPos += 10;
+            
+            const classAverage = classStudents.length > 0 ? 
+                (classStudents.reduce((sum, s) => sum + s.average, 0) / classStudents.length).toFixed(1) : 0;
+            
+            const girls = classStudents.filter(s => s.gender === 'fille').length;
+            const boys = classStudents.filter(s => s.gender === 'garcon').length;
+            const newStudents = classStudents.filter(s => s.seniority === 'nouveau').length;
+            const passingStudents = classStudents.filter(s => s.average >= 10).length;
+            
+            const statsData = [
+                ['Moyenne de la classe', classAverage + '/20'],
+                ['Filles', `${girls} (${((girls/classStudents.length)*100).toFixed(1)}%)`],
+                ['Garçons', `${boys} (${((boys/classStudents.length)*100).toFixed(1)}%)`],
+                ['Nouveaux élèves', newStudents],
+                ['Élèves ayant la moyenne', `${passingStudents}/${classStudents.length} (${((passingStudents/classStudents.length)*100).toFixed(1)}%)`]
+            ];
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [['Statistique', 'Valeur']],
+                body: statsData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] }
+            });
+            
+            // Notes par matière
+            yPos = doc.lastAutoTable.finalY + 15;
+            
+            if (classGrades.length > 0) {
+                doc.setFontSize(16);
+                doc.setTextColor(44, 62, 80);
+                doc.text('Notes par Matière', 20, yPos);
+                yPos += 10;
+                
+                const subjects = {};
+                classGrades.forEach(grade => {
+                    if (!subjects[grade.subject]) {
+                        subjects[grade.subject] = {
+                            grades: [],
+                            average: 0,
+                            count: 0
+                        };
+                    }
+                    subjects[grade.subject].grades.push(grade.value);
+                    subjects[grade.subject].count++;
+                });
+                
+                Object.keys(subjects).forEach(subject => {
+                    const gradesList = subjects[subject].grades;
+                    subjects[subject].average = gradesList.length > 0 ? 
+                        (gradesList.reduce((a, b) => a + b, 0) / gradesList.length).toFixed(1) : 0;
+                });
+                
+                const subjectStats = Object.keys(subjects).map(subject => [
+                    getSubjectName(subject),
+                    subjects[subject].count,
+                    subjects[subject].average
+                ]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Matière', 'Nombre de notes', 'Moyenne']],
+                    body: subjectStats,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    columnStyles: {
+                        1: { halign: 'center' },
+                        2: { halign: 'center' }
+                    }
+                });
+            } else {
+                doc.setFontSize(14);
+                doc.text('Aucune note enregistrée pour cette classe', 105, yPos, { align: 'center' });
+            }
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} / ${pageCount}`, 105, 287, { align: 'center' });
+                doc.text(`EduNotes Pro - Classe ${className}`, 105, 292, { align: 'center' });
+            }
+            
+            const fileName = `edunotes-classe-${className}-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            pdfData = {
+                title: `Classe ${className}`,
+                content: doc.output('datauristring'),
+                fileName: fileName
+            };
+            
+            showPDFStatus('PDF par classe généré avec succès !');
+        }
+
+        function generateCompetencesPDF() {
+            showPDFStatus('Génération du PDF compétences en cours...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const competences = getCompetences();
+            const students = getStudents();
+            
+            // Titre
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Compétences des Élèves - EduNotes Pro', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} - ${competences.length} évaluations`, 105, 28, { align: 'center' });
+            
+            if (competences.length === 0) {
+                doc.setFontSize(14);
+                doc.text('Aucune compétence évaluée', 105, 50, { align: 'center' });
+            } else {
+                let yPos = 35;
+                
+                // Parcourir les évaluations de compétences
+                for (let i = 0; i < competences.length; i++) {
+                    const comp = competences[i];
+                    const student = students.find(s => s.id === comp.studentId);
+                    const studentName = student ? `${student.firstName} ${student.lastName}` : 'Inconnu';
+                    
+                    // Vérifier si on doit ajouter une nouvelle page
+                    if (yPos > 250 && i < competences.length - 1) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(44, 62, 80);
+                    doc.text(`${studentName} - ${getSubjectName(comp.subject)}`, 20, yPos);
+                    
+                    doc.setFontSize(10);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`Leçon: ${comp.lesson} | Date: ${new Date(comp.date).toLocaleDateString('fr-FR')}`, 20, yPos + 6);
+                    
+                    yPos += 15;
+                    
+                    // Compétences évaluées
+                    if (comp.competences && comp.competences.length > 0) {
+                        const compData = comp.competences.map(c => [
+                            c.name,
+                            getLevelText(c.level)
+                        ]);
+                        
+                        doc.autoTable({
+                            startY: yPos,
+                            head: [['Compétence', 'Niveau']],
+                            body: compData,
+                            theme: 'grid',
+                            headStyles: { fillColor: [231, 76, 60] },
+                            margin: { top: 5, bottom: 10 },
+                            tableWidth: 170
+                        });
+                        
+                        yPos = doc.lastAutoTable.finalY + 10;
+                    }
+                    
+                    // Commentaire
+                    if (comp.comment) {
+                        doc.setFontSize(9);
+                        doc.setTextColor(80, 80, 80);
+                        doc.text(`Commentaire: ${comp.comment}`, 20, yPos);
+                        yPos += 10;
+                    }
+                    
+                    // Séparateur
+                    if (i < competences.length - 1) {
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(20, yPos, 190, yPos);
+                        yPos += 15;
+                    }
+                }
+            }
+            
+            // Statistiques globales
+            doc.addPage();
+            let yPos = 20;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Statistiques des Compétences', 20, yPos);
+            yPos += 10;
+            
+            let compExcellent = 0, compGood = 0, compAverage = 0, compNeeds = 0, totalComps = 0;
+            competences.forEach(comp => {
+                if (comp.competences) {
+                    comp.competences.forEach(c => {
+                        totalComps++;
+                        if (c.level === 'excellent') compExcellent++;
+                        else if (c.level === 'good') compGood++;
+                        else if (c.level === 'average') compAverage++;
+                        else if (c.level === 'needs-improvement') compNeeds++;
+                    });
+                }
+            });
+            
+            const statsData = [
+                ['Total compétences évaluées', totalComps],
+                ['Niveau Expert', `${compExcellent} (${totalComps > 0 ? ((compExcellent/totalComps)*100).toFixed(1) : 0}%)`],
+                ['Niveau Acquis', `${compGood} (${totalComps > 0 ? ((compGood/totalComps)*100).toFixed(1) : 0}%)`],
+                ['Niveau En cours', `${compAverage} (${totalComps > 0 ? ((compAverage/totalComps)*100).toFixed(1) : 0}%)`],
+                ['À renforcer', `${compNeeds} (${totalComps > 0 ? ((compNeeds/totalComps)*100).toFixed(1) : 0}%)`]
+            ];
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [['Statistique', 'Valeur']],
+                body: statsData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] }
+            });
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} / ${pageCount}`, 105, 287, { align: 'center' });
+                doc.text('EduNotes Pro - Compétences', 105, 292, { align: 'center' });
+            }
+            
+            const fileName = `edunotes-competences-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            pdfData = {
+                title: 'Compétences des Élèves',
+                content: doc.output('datauristring'),
+                fileName: fileName
+            };
+            
+            showPDFStatus('PDF compétences généré avec succès !');
+        }
+
+        function generateClassOverviewPDF() {
+            showPDFStatus('Génération du PDF classes en cours...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const students = getStudents();
+            const grades = getGrades();
+            const classes = [...new Set(students.map(s => s.class))].sort();
+            
+            // Titre
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Vue d\'ensemble des Classes - EduNotes Pro', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} - ${classes.length} classes`, 105, 28, { align: 'center' });
+            
+            let yPos = 35;
+            
+            // Parcourir les classes
+            for (let i = 0; i < classes.length; i++) {
+                const className = classes[i];
+                const classStudents = students.filter(s => s.class === className);
+                const classGrades = grades.filter(g => {
+                    const student = students.find(s => s.id === g.studentId);
+                    return student && student.class === className;
+                });
+                
+                // Vérifier si on doit ajouter une nouvelle page
+                if (yPos > 250 && i < classes.length - 1) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.setTextColor(44, 62, 80);
+                doc.text(`Classe de ${className}`, 20, yPos);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`${classStudents.length} élèves | ${classGrades.length} notes enregistrées`, 20, yPos + 6);
+                
+                yPos += 15;
+                
+                // Statistiques de la classe
+                const classAverage = classStudents.length > 0 ? 
+                    (classStudents.reduce((sum, s) => sum + s.average, 0) / classStudents.length).toFixed(1) : 0;
+                const passingStudents = classStudents.filter(s => s.average >= 10).length;
+                
+                const classData = [
+                    ['Moyenne de la classe', classAverage + '/20'],
+                    ['Élèves ayant la moyenne', `${passingStudents}/${classStudents.length} (${((passingStudents/classStudents.length)*100).toFixed(1)}%)`],
+                    ['Filles', classStudents.filter(s => s.gender === 'fille').length],
+                    ['Garçons', classStudents.filter(s => s.gender === 'garcon').length],
+                    ['Nouveaux élèves', classStudents.filter(s => s.seniority === 'nouveau').length]
+                ];
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Statistique', 'Valeur']],
+                    body: classData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    margin: { top: 5, bottom: 10 },
+                    tableWidth: 170
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 15;
+                
+                // Notes par matière (si disponibles)
+                if (classGrades.length > 0) {
+                    const subjects = {};
+                    classGrades.forEach(grade => {
+                        if (!subjects[grade.subject]) {
+                            subjects[grade.subject] = {
+                                grades: [],
+                                average: 0,
+                                count: 0
+                            };
+                        }
+                        subjects[grade.subject].grades.push(grade.value);
+                        subjects[grade.subject].count++;
+                    });
+                    
+                    Object.keys(subjects).forEach(subject => {
+                        const gradesList = subjects[subject].grades;
+                        subjects[subject].average = gradesList.length > 0 ? 
+                            (gradesList.reduce((a, b) => a + b, 0) / gradesList.length).toFixed(1) : 0;
+                    });
+                    
+                    const subjectStats = Object.keys(subjects).map(subject => [
+                        getSubjectName(subject),
+                        subjects[subject].count,
+                        subjects[subject].average
+                    ]);
+                    
+                    doc.setFontSize(10);
+                    doc.setTextColor(44, 62, 80);
+                    doc.text('Notes par matière:', 20, yPos);
+                    yPos += 8;
+                    
+                    doc.autoTable({
+                        startY: yPos,
+                        head: [['Matière', 'Nb notes', 'Moyenne']],
+                        body: subjectStats,
+                        theme: 'grid',
+                        headStyles: { fillColor: [231, 76, 60] },
+                        margin: { top: 5, bottom: 10 },
+                        tableWidth: 150,
+                        columnStyles: {
+                            1: { halign: 'center' },
+                            2: { halign: 'center' }
+                        }
+                    });
+                    
+                    yPos = doc.lastAutoTable.finalY + 15;
+                }
+                
+                // Séparateur
+                if (i < classes.length - 1) {
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(20, yPos, 190, yPos);
+                    yPos += 20;
+                }
+            }
+            
+            // Statistiques globales
+            doc.addPage();
+            yPos = 20;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Statistiques Globales', 20, yPos);
+            yPos += 10;
+            
+            const totalStudents = students.length;
+            const totalGirls = students.filter(s => s.gender === 'fille').length;
+            const totalBoys = students.filter(s => s.gender === 'garcon').length;
+            const totalNew = students.filter(s => s.seniority === 'nouveau').length;
+            const totalGrades = grades.length;
+            
+            const globalStats = [
+                ['Total élèves', totalStudents],
+                ['Filles', `${totalGirls} (${((totalGirls/totalStudents)*100).toFixed(1)}%)`],
+                ['Garçons', `${totalBoys} (${((totalBoys/totalStudents)*100).toFixed(1)}%)`],
+                ['Nouveaux élèves', totalNew],
+                ['Notes enregistrées', totalGrades],
+                ['Nombre de classes', classes.length]
+            ];
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [['Statistique', 'Valeur']],
+                body: globalStats,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] }
+            });
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} / ${pageCount}`, 105, 287, { align: 'center' });
+                doc.text('EduNotes Pro - Vue d\'ensemble des Classes', 105, 292, { align: 'center' });
+            }
+            
+            const fileName = `edunotes-classes-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            pdfData = {
+                title: 'Vue d\'ensemble des Classes',
+                content: doc.output('datauristring'),
+                fileName: fileName
+            };
+            
+            showPDFStatus('PDF classes généré avec succès !');
+        }
+
+        function generateAnalyticsPDF() {
+            showPDFStatus('Génération du PDF analyses en cours...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const students = getStudents();
+            const grades = getGrades();
+            const competences = getCompetences();
+            
+            // Titre
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Analyses Avancées - EduNotes Pro', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 105, 28, { align: 'center' });
+            
+            let yPos = 40;
+            
+            // Statistiques détaillées
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Statistiques Détailées', 20, yPos);
+            yPos += 10;
+            
+            if (grades.length > 0) {
+                const values = grades.map(g => g.value);
+                const sorted = [...values].sort((a, b) => a - b);
+                const median = sorted.length % 2 === 0 ? 
+                    (sorted[sorted.length/2 - 1] + sorted[sorted.length/2]) / 2 : 
+                    sorted[Math.floor(sorted.length/2)];
+                
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const variance = values.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / values.length;
+                const stdDev = Math.sqrt(variance);
+                const successRate = (values.filter(v => v >= 10).length / values.length * 100).toFixed(1);
+                const topGrade = Math.max(...values);
+                const lowestGrade = Math.min(...values);
+                
+                const statsData = [
+                    ['Moyenne générale', mean.toFixed(1)],
+                    ['Médiane', median.toFixed(1)],
+                    ['Écart-type', stdDev.toFixed(2)],
+                    ['Taux de réussite', successRate + '%'],
+                    ['Meilleure note', topGrade.toFixed(1)],
+                    ['Plus basse note', lowestGrade.toFixed(1)],
+                    ['Nombre total de notes', grades.length]
+                ];
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Statistique', 'Valeur']],
+                    body: statsData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    columnStyles: {
+                        1: { halign: 'center' }
+                    }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 15;
+            }
+            
+            // Performances par genre
+            doc.addPage();
+            yPos = 20;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Performances par Genre', 20, yPos);
+            yPos += 10;
+            
+            const girls = students.filter(s => s.gender === 'fille');
+            const boys = students.filter(s => s.gender === 'garcon');
+            
+            const girlGrades = grades.filter(g => {
+                const student = students.find(s => s.id === g.studentId && s.gender === 'fille');
+                return student !== undefined;
+            }).map(g => g.value);
+            
+            const boyGrades = grades.filter(g => {
+                const student = students.find(s => s.id === g.studentId && s.gender === 'garcon');
+                return student !== undefined;
+            }).map(g => g.value);
+            
+            const girlAvg = girlGrades.length > 0 ? (girlGrades.reduce((a, b) => a + b, 0) / girlGrades.length).toFixed(1) : 'N/A';
+            const boyAvg = boyGrades.length > 0 ? (boyGrades.reduce((a, b) => a + b, 0) / boyGrades.length).toFixed(1) : 'N/A';
+            
+            const genderData = [
+                ['Genre', 'Nombre d\'élèves', 'Nombre de notes', 'Moyenne'],
+                ['Filles', girls.length, girlGrades.length, girlAvg],
+                ['Garçons', boys.length, boyGrades.length, boyAvg]
+            ];
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [genderData[0]],
+                body: genderData.slice(1),
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    1: { halign: 'center' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' }
+                }
+            });
+            
+            // Compétences globales
+            yPos = doc.lastAutoTable.finalY + 15;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Compétences Globales', 20, yPos);
+            yPos += 10;
+            
+            let compExcellent = 0, compGood = 0, compAverage = 0, compNeeds = 0, totalComps = 0;
+            competences.forEach(comp => {
+                if (comp.competences) {
+                    comp.competences.forEach(c => {
+                        totalComps++;
+                        if (c.level === 'excellent') compExcellent++;
+                        else if (c.level === 'good') compGood++;
+                        else if (c.level === 'average') compAverage++;
+                        else if (c.level === 'needs-improvement') compNeeds++;
+                    });
+                }
+            });
+            
+            const competenceData = [
+                ['Niveau', 'Nombre', 'Pourcentage'],
+                ['Expert', compExcellent, totalComps > 0 ? ((compExcellent/totalComps)*100).toFixed(1) + '%' : '0%'],
+                ['Acquis', compGood, totalComps > 0 ? ((compGood/totalComps)*100).toFixed(1) + '%' : '0%'],
+                ['En cours', compAverage, totalComps > 0 ? ((compAverage/totalComps)*100).toFixed(1) + '%' : '0%'],
+                ['À renforcer', compNeeds, totalComps > 0 ? ((compNeeds/totalComps)*100).toFixed(1) + '%' : '0%'],
+                ['Total', totalComps, '100%']
+            ];
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [competenceData[0]],
+                body: competenceData.slice(1),
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    1: { halign: 'center' },
+                    2: { halign: 'center' }
+                }
+            });
+            
+            // Répartition par classe
+            doc.addPage();
+            yPos = 20;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Répartition par Classe', 20, yPos);
+            yPos += 10;
+            
+            const classes = [...new Set(students.map(s => s.class))].sort();
+            const classData = classes.map(className => {
+                const classStudents = students.filter(s => s.class === className);
+                const classGrades = grades.filter(g => {
+                    const student = students.find(s => s.id === g.studentId);
+                    return student && student.class === className;
+                });
+                
+                const classAverage = classStudents.length > 0 ? 
+                    (classStudents.reduce((sum, s) => sum + s.average, 0) / classStudents.length).toFixed(1) : 0;
+                const passingStudents = classStudents.filter(s => s.average >= 10).length;
+                
+                return [
+                    className,
+                    classStudents.length,
+                    classGrades.length,
+                    classAverage,
+                    `${passingStudents}/${classStudents.length} (${((passingStudents/classStudents.length)*100).toFixed(1)}%)`
+                ];
+            });
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [['Classe', 'Élèves', 'Notes', 'Moyenne', 'Réussite']],
+                body: classData,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    1: { halign: 'center' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' },
+                    4: { halign: 'center' }
+                }
+            });
+            
+            // Notes par matière
+            yPos = doc.lastAutoTable.finalY + 15;
+            
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Notes par Matière', 20, yPos);
+            yPos += 10;
+            
+            const subjects = {};
+            grades.forEach(grade => {
+                if (!subjects[grade.subject]) {
+                    subjects[grade.subject] = {
+                        grades: [],
+                        average: 0,
+                        count: 0
+                    };
+                }
+                subjects[grade.subject].grades.push(grade.value);
+                subjects[grade.subject].count++;
+            });
+            
+            Object.keys(subjects).forEach(subject => {
+                const gradesList = subjects[subject].grades;
+                subjects[subject].average = gradesList.length > 0 ? 
+                    (gradesList.reduce((a, b) => a + b, 0) / gradesList.length).toFixed(1) : 0;
+            });
+            
+            const subjectStats = Object.keys(subjects).map(subject => [
+                getSubjectName(subject),
+                subjects[subject].count,
+                subjects[subject].average,
+                subjects[subject].count > 0 ? 
+                    ((subjects[subject].grades.filter(g => g >= 10).length / subjects[subject].count) * 100).toFixed(1) + '%' : '0%'
+            ]);
+            
+            doc.autoTable({
+                startY: yPos,
+                head: [['Matière', 'Nb notes', 'Moyenne', 'Taux réussite']],
+                body: subjectStats,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: {
+                    1: { halign: 'center' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' }
+                }
+            });
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} / ${pageCount}`, 105, 287, { align: 'center' });
+                doc.text('EduNotes Pro - Analyses Avancées', 105, 292, { align: 'center' });
+            }
+            
+            const fileName = `edunotes-analyses-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+            
+            pdfData = {
+                title: 'Analyses Avancées',
+                content: doc.output('datauristring'),
+                fileName: fileName
+            };
+            
+            showPDFStatus('PDF analyses généré avec succès !');
+        }
+
+        function showPDFPreview() {
+            if (!pdfData.content) {
+                alert('Aucun PDF à prévisualiser');
+                return;
+            }
+            
+            const preview = document.getElementById('pdfPreview');
+            const previewContent = document.getElementById('pdfPreviewContent');
+            
+            if (preview && previewContent) {
+                previewContent.innerHTML = `<iframe src="${pdfData.content}" width="100%" height="100%"></iframe>`;
+                preview.classList.add('active');
+                openModal('pdfPreviewModal');
+            }
+        }
+
+        function downloadCurrentPDF() {
+            if (!pdfData.content) {
+                alert('Aucun PDF à télécharger');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.href = pdfData.content;
+            link.download = pdfData.fileName;
+            link.click();
+            closeModal('pdfPreviewModal');
         }
 
         // Initialisation
@@ -3766,55 +5236,74 @@
             
             // Initialiser la date
             const today = new Date();
-            document.getElementById('gradeDate').value = today.toISOString().split('T')[0];
-            document.getElementById('newStudentRegistrationDate').value = today.toISOString().split('T')[0];
+            const gradeDate = document.getElementById('gradeDate');
+            if (gradeDate) {
+                gradeDate.value = today.toISOString().split('T')[0];
+            }
+            
+            const newStudentRegistrationDate = document.getElementById('newStudentRegistrationDate');
+            if (newStudentRegistrationDate) {
+                newStudentRegistrationDate.value = today.toISOString().split('T')[0];
+            }
             
             // Configurer les événements
-            document.getElementById('jsonFile').addEventListener('change', function(e) {
-                const fileName = e.target.files[0] ? e.target.files[0].name : 'Aucun fichier sélectionné';
-                document.getElementById('fileName').textContent = fileName;
-            });
+            const jsonFileInput = document.getElementById('jsonFile');
+            if (jsonFileInput) {
+                jsonFileInput.addEventListener('change', function(e) {
+                    const fileName = e.target.files[0] ? e.target.files[0].name : 'Aucun fichier sélectionné';
+                    const fileNameElement = document.getElementById('fileName');
+                    if (fileNameElement) {
+                        fileNameElement.textContent = fileName;
+                    }
+                });
+            }
             
             // Formulaire de notes
-            document.getElementById('gradeForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const studentId = parseInt(document.getElementById('studentSelect').value);
-                const subject = document.getElementById('subjectSelect').value;
-                const lesson = document.getElementById('lessonSelect').value;
-                const type = document.getElementById('gradeType').value;
-                const value = parseFloat(document.getElementById('gradeValue').value);
-                const date = document.getElementById('gradeDate').value;
-                const comment = document.getElementById('gradeComment').value;
-                
-                if (studentId && subject && lesson && type && value && date) {
-                    const grades = getGrades();
-                    const newId = grades.length > 0 ? Math.max(...grades.map(g => g.id)) + 1 : 1;
+            const gradeForm = document.getElementById('gradeForm');
+            if (gradeForm) {
+                gradeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     
-                    const newGrade = {
-                        id: newId,
-                        studentId,
-                        subject,
-                        lesson,
-                        value,
-                        type,
-                        date,
-                        comment
-                    };
+                    const studentId = parseInt(document.getElementById('studentSelect').value);
+                    const subject = document.getElementById('subjectSelect').value;
+                    const lesson = document.getElementById('lessonSelect').value;
+                    const type = document.getElementById('gradeType').value;
+                    const value = parseFloat(document.getElementById('gradeValue').value);
+                    const date = document.getElementById('gradeDate').value;
+                    const comment = document.getElementById('gradeComment').value;
                     
-                    grades.push(newGrade);
-                    localStorage.setItem('edunotesProGrades', JSON.stringify(grades));
-                    
-                    // Recalculer la moyenne de l'élève
-                    calculateStudentAverage(studentId);
-                    
-                    document.getElementById('gradeForm').reset();
-                    document.getElementById('gradeDate').value = new Date().toISOString().split('T')[0];
-                    
-                    updateAllDisplays();
-                    alert('Note enregistrée avec succès !');
-                }
-            });
+                    if (studentId && subject && lesson && type && value && date) {
+                        const grades = getGrades();
+                        const newId = grades.length > 0 ? Math.max(...grades.map(g => g.id)) + 1 : 1;
+                        
+                        const newGrade = {
+                            id: newId,
+                            studentId,
+                            subject,
+                            lesson,
+                            value,
+                            type,
+                            date,
+                            comment
+                        };
+                        
+                        grades.push(newGrade);
+                        localStorage.setItem('edunotesProGrades', JSON.stringify(grades));
+                        
+                        // Recalculer la moyenne de l'élève
+                        calculateStudentAverage(studentId);
+                        
+                        gradeForm.reset();
+                        const gradeDateInput = document.getElementById('gradeDate');
+                        if (gradeDateInput) {
+                            gradeDateInput.value = new Date().toISOString().split('T')[0];
+                        }
+                        
+                        updateAllDisplays();
+                        alert('Note enregistrée avec succès !');
+                    }
+                });
+            }
             
             function calculateStudentAverage(studentId) {
                 const students = getStudents();
@@ -3833,110 +5322,146 @@
             }
             
             // Formulaire de compétences
-            document.getElementById('competenceForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const studentId = parseInt(document.getElementById('competenceStudent').value);
-                const subject = document.getElementById('competenceSubject').value;
-                const lesson = document.getElementById('competenceLesson').value;
-                const comment = document.getElementById('competenceComment').value;
-                
-                if (studentId && subject && lesson) {
-                    const competences = getCompetences();
-                    const newId = competences.length > 0 ? Math.max(...competences.map(c => c.id)) + 1 : 1;
+            const competenceForm = document.getElementById('competenceForm');
+            if (competenceForm) {
+                competenceForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     
-                    const competenceElements = document.querySelectorAll('#competenceList .competence-card');
-                    const competencesList = [];
+                    const studentId = parseInt(document.getElementById('competenceStudent').value);
+                    const subject = document.getElementById('competenceSubject').value;
+                    const lesson = document.getElementById('competenceLesson').value;
+                    const comment = document.getElementById('competenceComment').value;
                     
-                    competenceElements.forEach(card => {
-                        const name = card.querySelector('.competence-name').textContent;
-                        const level = card.querySelector('select').value;
-                        if (level && level !== 'not-evaluated') {
-                            competencesList.push({ name, level });
+                    if (studentId && subject && lesson) {
+                        const competences = getCompetences();
+                        const newId = competences.length > 0 ? Math.max(...competences.map(c => c.id)) + 1 : 1;
+                        
+                        const competenceElements = document.querySelectorAll('#competenceList .competence-card');
+                        const competencesList = [];
+                        
+                        competenceElements.forEach(card => {
+                            const nameElement = card.querySelector('.competence-name');
+                            const selectElement = card.querySelector('select');
+                            if (nameElement && selectElement) {
+                                const name = nameElement.textContent;
+                                const level = selectElement.value;
+                                if (level && level !== 'not-evaluated') {
+                                    competencesList.push({ name, level });
+                                }
+                            }
+                        });
+                        
+                        if (competencesList.length === 0) {
+                            alert('Veuillez évaluer au moins une compétence.');
+                            return;
                         }
-                    });
-                    
-                    if (competencesList.length === 0) {
-                        alert('Veuillez évaluer au moins une compétence.');
-                        return;
+                        
+                        const newCompetence = {
+                            id: newId,
+                            studentId,
+                            subject,
+                            lesson,
+                            date: new Date().toISOString().split('T')[0],
+                            competences: competencesList,
+                            comment
+                        };
+                        
+                        competences.push(newCompetence);
+                        localStorage.setItem('edunotesProCompetences', JSON.stringify(competences));
+                        
+                        competenceForm.reset();
+                        const competenceListElement = document.getElementById('competenceList');
+                        if (competenceListElement) {
+                            competenceListElement.innerHTML = '';
+                        }
+                        
+                        updateAllDisplays();
+                        alert('Compétences enregistrées avec succès !');
                     }
-                    
-                    const newCompetence = {
-                        id: newId,
-                        studentId,
-                        subject,
-                        lesson,
-                        date: new Date().toISOString().split('T')[0],
-                        competences: competencesList,
-                        comment
-                    };
-                    
-                    competences.push(newCompetence);
-                    localStorage.setItem('edunotesProCompetences', JSON.stringify(competences));
-                    
-                    document.getElementById('competenceForm').reset();
-                    document.getElementById('competenceList').innerHTML = '';
-                    
-                    updateAllDisplays();
-                    alert('Compétences enregistrées avec succès !');
-                }
-            });
+                });
+            }
             
             // Bouton générer compétences
-            document.getElementById('generateCompetencesBtn').addEventListener('click', function() {
-                const subject = document.getElementById('competenceSubject').value;
-                if (subject) {
-                    const subjectCompetences = getSubjectCompetences();
-                    const competences = subjectCompetences[subject] || [
-                        "Compétence 1",
-                        "Compétence 2", 
-                        "Compétence 3",
-                        "Compétence 4"
-                    ];
-                    
-                    const competenceList = document.getElementById('competenceList');
-                    competenceList.innerHTML = '';
-                    
-                    competences.forEach((competence, index) => {
-                        const card = document.createElement('div');
-                        card.className = 'competence-card';
-                        card.innerHTML = `
-                            <div class="competence-header">
-                                <div class="competence-name">${competence}</div>
-                                <select class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.9rem;">
-                                    <option value="not-evaluated">Non évalué</option>
-                                    <option value="needs-improvement">À renforcer</option>
-                                    <option value="average">En cours</option>
-                                    <option value="good">Acquis</option>
-                                    <option value="excellent">Expert</option>
-                                </select>
-                            </div>
-                        `;
-                        competenceList.appendChild(card);
-                    });
-                } else {
-                    alert('Veuillez d\'abord sélectionner une matière');
-                }
-            });
+            const generateCompetencesBtn = document.getElementById('generateCompetencesBtn');
+            if (generateCompetencesBtn) {
+                generateCompetencesBtn.addEventListener('click', function() {
+                    const subject = document.getElementById('competenceSubject').value;
+                    if (subject) {
+                        const subjectCompetences = getSubjectCompetences();
+                        const competences = subjectCompetences[subject] || [
+                            "Compétence 1",
+                            "Compétence 2", 
+                            "Compétence 3",
+                            "Compétence 4"
+                        ];
+                        
+                        const competenceList = document.getElementById('competenceList');
+                        if (competenceList) {
+                            competenceList.innerHTML = '';
+                            
+                            competences.forEach((competence, index) => {
+                                const card = document.createElement('div');
+                                card.className = 'competence-card';
+                                card.innerHTML = `
+                                    <div class="competence-header">
+                                        <div class="competence-name">${competence}</div>
+                                        <select class="form-control" style="width: auto; padding: 5px 10px; font-size: 0.9rem;">
+                                            <option value="not-evaluated">Non évalué</option>
+                                            <option value="needs-improvement">À renforcer</option>
+                                            <option value="average">En cours</option>
+                                            <option value="good">Acquis</option>
+                                            <option value="excellent">Expert</option>
+                                        </select>
+                                    </div>
+                                `;
+                                competenceList.appendChild(card);
+                            });
+                        }
+                    } else {
+                        alert('Veuillez d\'abord sélectionner une matière');
+                    }
+                });
+            }
             
             // Configurer les filtres
-            document.getElementById('filterClass').addEventListener('change', renderStudentsTable);
-            document.getElementById('filterGender').addEventListener('change', renderStudentsTable);
-            document.getElementById('filterSeniority').addEventListener('change', renderStudentsTable);
-            document.getElementById('searchStudent').addEventListener('input', renderStudentsTable);
+            const filterClass = document.getElementById('filterClass');
+            if (filterClass) filterClass.addEventListener('change', renderStudentsTable);
             
-            document.getElementById('viewClass').addEventListener('change', renderGradesTable);
-            document.getElementById('viewSubject').addEventListener('change', renderGradesTable);
-            document.getElementById('viewPeriod').addEventListener('change', renderGradesTable);
+            const filterGender = document.getElementById('filterGender');
+            if (filterGender) filterGender.addEventListener('change', renderStudentsTable);
             
-            document.getElementById('statsClass').addEventListener('change', updateGradeStatistics);
-            document.getElementById('statsSubject').addEventListener('change', updateGradeStatistics);
-            document.getElementById('statsPeriod').addEventListener('change', updateGradeStatistics);
+            const filterSeniority = document.getElementById('filterSeniority');
+            if (filterSeniority) filterSeniority.addEventListener('change', renderStudentsTable);
             
-            document.getElementById('overviewClass').addEventListener('change', renderClassOverview);
+            const searchStudent = document.getElementById('searchStudent');
+            if (searchStudent) searchStudent.addEventListener('input', renderStudentsTable);
             
-            document.getElementById('competenceStudentSelect').addEventListener('change', renderCompetencesList);
-            document.getElementById('competenceSubjectFilter').addEventListener('change', renderCompetencesList);
+            const viewClass = document.getElementById('viewClass');
+            if (viewClass) viewClass.addEventListener('change', renderGradesTable);
+            
+            const viewSubject = document.getElementById('viewSubject');
+            if (viewSubject) viewSubject.addEventListener('change', renderGradesTable);
+            
+            const viewPeriod = document.getElementById('viewPeriod');
+            if (viewPeriod) viewPeriod.addEventListener('change', renderGradesTable);
+            
+            const statsClass = document.getElementById('statsClass');
+            if (statsClass) statsClass.addEventListener('change', updateGradeStatistics);
+            
+            const statsSubject = document.getElementById('statsSubject');
+            if (statsSubject) statsSubject.addEventListener('change', updateGradeStatistics);
+            
+            const statsPeriod = document.getElementById('statsPeriod');
+            if (statsPeriod) statsPeriod.addEventListener('change', updateGradeStatistics);
+            
+            const overviewClass = document.getElementById('overviewClass');
+            if (overviewClass) overviewClass.addEventListener('change', renderClassOverview);
+            
+            const competenceStudentSelect = document.getElementById('competenceStudentSelect');
+            if (competenceStudentSelect) competenceStudentSelect.addEventListener('change', renderCompetencesList);
+            
+            const competenceSubjectFilter = document.getElementById('competenceSubjectFilter');
+            if (competenceSubjectFilter) competenceSubjectFilter.addEventListener('change', renderCompetencesList);
             
             // Initialiser l'affichage
             updateAllDisplays();
@@ -3998,9 +5523,11 @@
                 studentCompetences.forEach(comp => {
                     const date = new Date(comp.date).toLocaleDateString('fr-FR');
                     message += `- ${getSubjectName(comp.subject)}: ${comp.lesson} (${date})\n`;
-                    comp.competences.forEach(c => {
-                        message += `  • ${c.name}: ${getLevelText(c.level)}\n`;
-                    });
+                    if (comp.competences) {
+                        comp.competences.forEach(c => {
+                            message += `  • ${c.name}: ${getLevelText(c.level)}\n`;
+                        });
+                    }
                     if (comp.comment) {
                         message += `  Commentaire: ${comp.comment}\n`;
                     }
@@ -4090,14 +5617,23 @@
             document.querySelectorAll('[data-grade-tab]').forEach(item => {
                 item.classList.remove('active');
             });
-            document.querySelector('[data-grade-tab="add"]').classList.add('active');
+            const addTab = document.querySelector('[data-grade-tab="add"]');
+            if (addTab) {
+                addTab.classList.add('active');
+            }
             
             document.querySelectorAll('#grades .tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            document.getElementById('addGradeTab').classList.add('active');
+            const addGradeTab = document.getElementById('addGradeTab');
+            if (addGradeTab) {
+                addGradeTab.classList.add('active');
+            }
             
-            document.getElementById('studentSelect').value = studentId;
+            const studentSelect = document.getElementById('studentSelect');
+            if (studentSelect) {
+                studentSelect.value = studentId;
+            }
         }
 
         function editStudent(studentId) {
@@ -4115,10 +5651,12 @@
             
             // Modifier le bouton pour la mise à jour
             const saveBtn = document.querySelector('#addStudentModal .btn-success');
-            saveBtn.textContent = 'Mettre à jour';
-            saveBtn.onclick = function() {
-                updateStudent(studentId);
-            };
+            if (saveBtn) {
+                saveBtn.textContent = 'Mettre à jour';
+                saveBtn.onclick = function() {
+                    updateStudent(studentId);
+                };
+            }
             
             openModal('addStudentModal');
         }
@@ -4153,12 +5691,17 @@
                 localStorage.setItem('edunotesProStudents', JSON.stringify(students));
                 
                 closeModal('addStudentModal');
-                document.getElementById('addStudentForm').reset();
+                const addStudentForm = document.getElementById('addStudentForm');
+                if (addStudentForm) {
+                    addStudentForm.reset();
+                }
                 
                 // Réinitialiser le bouton
                 const saveBtn = document.querySelector('#addStudentModal .btn-success');
-                saveBtn.textContent = 'Enregistrer l\'élève';
-                saveBtn.onclick = saveNewStudent;
+                if (saveBtn) {
+                    saveBtn.textContent = 'Enregistrer l\'élève';
+                    saveBtn.onclick = saveNewStudent;
+                }
                 
                 updateAllDisplays();
                 alert('Élève mis à jour avec succès !');
@@ -4220,7 +5763,10 @@
                         calculateStudentAverage(studentId);
                         
                         gradeForm.reset();
-                        document.getElementById('gradeDate').value = new Date().toISOString().split('T')[0];
+                        const gradeDateInput = document.getElementById('gradeDate');
+                        if (gradeDateInput) {
+                            gradeDateInput.value = new Date().toISOString().split('T')[0];
+                        }
                         
                         // Restaurer le comportement original
                         gradeForm.onsubmit = originalSubmit;
@@ -4242,7 +5788,7 @@
             if (select) {
                 const currentValue = select.value;
                 select.innerHTML = '<option value="">Sélectionner un élève</option>' +
-                    students.map(s => `<option value="${s.id}">${s.firstName} ${student.lastName} (${s.class})</option>`).join('');
+                    students.map(s => `<option value="${s.id}">${s.firstName} ${s.lastName} (${s.class})</option>`).join('');
                 if (currentValue) {
                     select.value = currentValue;
                 }
@@ -4261,40 +5807,6 @@
                     select.value = currentValue;
                 }
             }
-        }
-
-        // Fonctions PDF (fonctionnalités de base)
-        function generateCompletePDF() {
-            alert('Génération du PDF complet en cours... Cette fonctionnalité nécessite une implémentation complète avec jsPDF.');
-            // Implémentation PDF à ajouter ici
-        }
-
-        function generateStudentsPDF() {
-            alert('PDF Élèves - Génération en cours...');
-        }
-
-        function generateGradesPDF() {
-            alert('PDF Notes - Génération en cours...');
-        }
-
-        function generateSubjectPDF() {
-            alert('PDF par matière - Génération en cours...');
-        }
-
-        function generateClassPDF() {
-            alert('PDF par classe - Génération en cours...');
-        }
-
-        function generateCompetencesPDF() {
-            alert('PDF Compétences - Génération en cours...');
-        }
-
-        function generateClassOverviewPDF() {
-            alert('PDF Classes - Génération en cours...');
-        }
-
-        function generateAnalyticsPDF() {
-            alert('PDF Analyses - Génération en cours...');
         }
     </script>
 </body>
