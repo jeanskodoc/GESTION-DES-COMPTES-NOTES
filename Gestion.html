@@ -770,81 +770,6 @@
             display: block;
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .logo {
-                justify-content: center;
-                text-align: center;
-            }
-            
-            .header-actions {
-                justify-content: center;
-            }
-            
-            nav ul {
-                justify-content: flex-start;
-            }
-            
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-            
-            .select-group {
-                grid-template-columns: 1fr;
-            }
-            
-            table {
-                display: block;
-                overflow-x: auto;
-            }
-            
-            .competence-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .card-actions {
-                justify-content: center;
-            }
-            
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 10px;
-            }
-            
-            .card {
-                padding: 15px;
-            }
-            
-            .stat-value {
-                font-size: 2rem;
-            }
-            
-            .gender-stat {
-                min-width: 80px;
-            }
-            
-            .tab {
-                padding: 10px 15px;
-                font-size: 0.9rem;
-            }
-            
-            .header-btn {
-                padding: 6px 10px;
-                font-size: 0.8rem;
-            }
-        }
-
         /* Modal styles */
         .modal {
             display: none;
@@ -1004,6 +929,81 @@
         .action-buttons {
             display: flex;
             gap: 5px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .logo {
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .header-actions {
+                justify-content: center;
+            }
+            
+            nav ul {
+                justify-content: flex-start;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .select-group {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .competence-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card-actions {
+                justify-content: center;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+            
+            .gender-stat {
+                min-width: 80px;
+            }
+            
+            .tab {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .header-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -2043,12 +2043,12 @@
                 <div class="footer-section">
                     <h3>Compatibilité</h3>
                     <p>Optimisé pour tous les écrans : desktop, tablette et mobile.</p>
-                    <p style="margin-top: 10px; font-size: 0.8rem;">Dernière mise à jour : Novembre 2023</p>
+                    <p style="margin-top: 10px; font-size: 0.8rem;">Dernière mise à jour : <span id="currentYear"></span></p>
                 </div>
             </div>
             
             <div class="copyright">
-                <p>&copy; 2026 EduNotes Pro - Tous droits réservés. Version 2.0</p>
+                <p>&copy; <span id="copyrightYear"></span> EduNotes Pro - Tous droits réservés. Version 2.0</p>
             </div>
         </div>
     </footer>
@@ -2134,6 +2134,11 @@
             }
             
             updateLastUpdateDisplay();
+            
+            // Mettre à jour les dates du footer
+            const currentYear = new Date().getFullYear();
+            document.getElementById('currentYear').textContent = currentYear + '年';
+            document.getElementById('copyrightYear').textContent = currentYear;
         }
 
         // Récupération des données
